@@ -1,0 +1,20 @@
+Analyze this screenshot from a short-form video app (like TikTok).
+
+Describe what you see in the video content and identify key topics/themes.
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "caption": "A brief 1-2 sentence description of the video content",
+  "topics": ["topic1", "topic2", "topic3"],
+  "contentType": "dance|comedy|tutorial|music|food|fitness|fashion|gaming|pets|nature|other",
+  "hasText": true/false,
+  "textContent": "any visible text in the video (empty string if none)"
+}
+
+Focus on identifying:
+- What activity or content is shown (dancing, cooking, talking, etc.)
+- People characteristics if relevant (but keep it general)
+- The mood or style of the content
+- Any visible hashtags or text overlays
+
+Keep topics as single lowercase words when possible (e.g., "dance", "girl", "music", "funny", "cooking").

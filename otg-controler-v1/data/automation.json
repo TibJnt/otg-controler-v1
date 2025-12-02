@@ -1,0 +1,8 @@
+{
+  "name": "New Automation",
+  "deviceIds": [],
+  "postIntervalSeconds": 10,
+  "scrollDelaySeconds": 3,
+  "triggers": [],
+  "running": "stopped"
+}
