@@ -2,6 +2,8 @@
  * Frontend API types - mirrors backend domain types
  */
 
+export type Platform = 'tiktok' | 'instagram';
+
 export type ActionType = 'LIKE' | 'COMMENT' | 'SAVE' | 'LIKE_AND_COMMENT' | 'LIKE_AND_SAVE' | 'NO_ACTION' | 'SKIP';
 
 export type AutomationStatus = 'stopped' | 'running';
@@ -11,13 +13,30 @@ export interface NormalizedCoords {
   yNorm: number;
 }
 
-export interface DeviceCoords {
+// TikTok-specific coordinates
+export interface TikTokCoords {
   like?: NormalizedCoords;
   comment?: NormalizedCoords;
   save?: NormalizedCoords;
-  commentSendButton?: NormalizedCoords;
   commentInputField?: NormalizedCoords;
+  commentSendButton?: NormalizedCoords;
   commentBackButton?: NormalizedCoords;
+}
+
+// Instagram-specific coordinates
+export interface InstagramCoords {
+  like?: NormalizedCoords;
+  comment?: NormalizedCoords;
+  share?: NormalizedCoords;
+  commentInputField?: NormalizedCoords;
+  commentSendButton?: NormalizedCoords;
+  commentCloseButton?: NormalizedCoords;
+}
+
+// Device coordinates nested by platform
+export interface DeviceCoords {
+  tiktok?: TikTokCoords;
+  instagram?: InstagramCoords;
 }
 
 export interface Device {
@@ -54,6 +73,7 @@ export interface ViewingTimeConfig {
 
 export interface AutomationConfig {
   name: string;
+  platform: Platform;
   deviceIds: string[];
   postIntervalSeconds: number;
   scrollDelaySeconds: number;

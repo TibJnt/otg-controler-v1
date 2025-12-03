@@ -7,7 +7,7 @@ import { scrollToNextVideo, screenshotAsDataUrl } from '../clients/imouse';
 import { analyzeImage, buildAnalysisText } from '../clients/vision';
 import { getTriggersForDevice, loadAutomation } from '../storage/automationStore';
 import { getDeviceById } from '../storage/deviceStore';
-import { Device, AutomationConfig } from '../types';
+import { Device, AutomationConfig, Platform } from '../types';
 import { findAllMatchingTriggers, selectWeightedTrigger, shouldSkipCycle } from '../utils/triggers';
 import { logInfo, logError, logWarn } from '../utils/logger';
 import { executeAction } from './actions';
@@ -54,7 +54,8 @@ function getViewingTime(hasMatch: boolean, config: AutomationConfig): number {
  */
 export async function executeCycle(
   deviceId: string,
-  config: EngineConfig
+  config: EngineConfig,
+  platform: Platform
 ): Promise<CycleResult> {
   const startTime = new Date();
 
@@ -80,13 +81,14 @@ export async function executeCycle(
       return result;
     }
     result.deviceLabel = device.label;
-    
+
     // DEBUG: Log device dimensions
-    logInfo(`[CYCLE DEBUG] Device loaded:`, deviceId);
+    logInfo(`[CYCLE DEBUG] Device loaded (platform: ${platform}):`, deviceId);
     logInfo(`[CYCLE DEBUG]   label: ${device.label}`, deviceId);
     logInfo(`[CYCLE DEBUG]   width: ${device.width}, height: ${device.height}`, deviceId);
     logInfo(`[CYCLE DEBUG]   screenWidth: ${device.screenWidth}, screenHeight: ${device.screenHeight}`, deviceId);
-    logInfo(`[CYCLE DEBUG]   like coords: ${JSON.stringify(device.coords.like)}`, deviceId);
+    const platformCoords = device.coords[platform];
+    logInfo(`[CYCLE DEBUG]   like coords: ${JSON.stringify(platformCoords?.like)}`, deviceId);
 
     // Check for humanization skip (random skip to appear more human)
     if (shouldSkipCycle(config.skipProbability)) {
@@ -125,7 +127,7 @@ export async function executeCycle(
 
     // Step 4: Analyze with Vision API
     logInfo('Analyzing screenshot...', deviceId);
-    const analysisResult = await analyzeImage(screenshotResult.dataUrl);
+    const analysisResult = await analyzeImage(screenshotResult.dataUrl, platform);
     if (!analysisResult.success || !analysisResult.result) {
       result.error = `Vision analysis failed: ${analysisResult.error}`;
       logError(result.error, deviceId);
@@ -169,7 +171,7 @@ export async function executeCycle(
 
           // Execute the selected action
           result.actionExecuted = selectedTrigger.action;
-          const actionResult = await executeAction(device, selectedTrigger.action, selectedTrigger);
+          const actionResult = await executeAction(device, platform, selectedTrigger.action, selectedTrigger);
           result.actionSuccess = actionResult.success;
 
           if (!actionResult.success) {

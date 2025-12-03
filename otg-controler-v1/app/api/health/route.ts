@@ -34,7 +34,7 @@ export async function GET() {
         },
         devices: {
           total: devices.length,
-          configured: devices.filter((d) => d.coords.like).length,
+          configured: devices.filter((d) => d.coords.tiktok?.like || d.coords.instagram?.like).length,
         },
       },
     });

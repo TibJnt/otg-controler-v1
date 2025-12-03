@@ -7,29 +7,31 @@
     "screenWidth": 608,
     "screenHeight": 1080,
     "coords": {
-      "like": {
-        "xNorm": 0.9111842105263158,
-        "yNorm": 0.41759259259259257
-      },
-      "comment": {
-        "xNorm": 0.9111842105263158,
-        "yNorm": 0.5685185185185185
-      },
-      "save": {
-        "xNorm": 0.9210526315789473,
-        "yNorm": 0.662962962962963
-      },
-      "commentSendButton": {
-        "xNorm": 0.875,
-        "yNorm": 0.9527777777777777
-      },
-      "commentInputField": {
-        "xNorm": 0.3832236842105263,
-        "yNorm": 0.9638888888888889
-      },
-      "commentBackButton": {
-        "xNorm": 0.930921052631579,
-        "yNorm": 0.3
+      "tiktok": {
+        "like": {
+          "xNorm": 0.9111842105263158,
+          "yNorm": 0.41759259259259257
+        },
+        "comment": {
+          "xNorm": 0.9111842105263158,
+          "yNorm": 0.5685185185185185
+        },
+        "save": {
+          "xNorm": 0.9210526315789473,
+          "yNorm": 0.662962962962963
+        },
+        "commentInputField": {
+          "xNorm": 0.3832236842105263,
+          "yNorm": 0.9638888888888889
+        },
+        "commentSendButton": {
+          "xNorm": 0.875,
+          "yNorm": 0.9527777777777777
+        },
+        "commentBackButton": {
+          "xNorm": 0.930921052631579,
+          "yNorm": 0.3
+        }
       }
     },
     "state": "1",

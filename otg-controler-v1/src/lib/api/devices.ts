@@ -3,7 +3,7 @@
  */
 
 import { apiGet, apiPost } from './client';
-import { DevicesResponse, ScreenshotResponse, NormalizedCoords } from './types';
+import { DevicesResponse, ScreenshotResponse, NormalizedCoords, Platform } from './types';
 
 /**
  * Get all devices
@@ -36,10 +36,11 @@ export async function refreshDevices(): Promise<DevicesResponse> {
  */
 export async function updateDeviceCoords(
   deviceId: string,
-  action: 'like' | 'comment' | 'save' | 'commentSendButton' | 'commentInputField',
+  platform: Platform,
+  action: string,
   coords: NormalizedCoords
 ): Promise<{ success: boolean; error?: string }> {
-  return apiPost(`/api/devices/${deviceId}/coords`, { action, coords });
+  return apiPost(`/api/devices/${deviceId}/coords`, { platform, action, coords });
 }
 
 /**
@@ -47,13 +48,14 @@ export async function updateDeviceCoords(
  */
 export async function updateDeviceCoordsFromPixels(
   deviceId: string,
-  action: 'like' | 'comment' | 'save' | 'commentSendButton' | 'commentInputField' | 'commentBackButton',
+  platform: Platform,
+  action: string,
   x: number,
   y: number
 ): Promise<{ success: boolean; error?: string }> {
   console.log('[API] ========== POST /api/devices/:id/coords ==========');
-  console.log('[API] Sending pixel coords:', { deviceId, action, x, y });
-  const response = await apiPost<{ success: boolean; error?: string }>(`/api/devices/${deviceId}/coords`, { action, x, y });
+  console.log('[API] Sending pixel coords:', { deviceId, platform, action, x, y });
+  const response = await apiPost<{ success: boolean; error?: string }>(`/api/devices/${deviceId}/coords`, { platform, action, x, y });
   console.log('[API] Response:', response);
   return response;
 }

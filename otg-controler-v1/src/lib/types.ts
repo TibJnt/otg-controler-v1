@@ -2,6 +2,9 @@
  * Domain types for the OTG Controller automation system
  */
 
+// Supported platforms
+export type Platform = 'tiktok' | 'instagram';
+
 // Action types that can be triggered on a video
 export type ActionType = 'LIKE' | 'COMMENT' | 'SAVE' | 'LIKE_AND_COMMENT' | 'LIKE_AND_SAVE' | 'NO_ACTION' | 'SKIP';
 
@@ -14,14 +17,30 @@ export interface NormalizedCoords {
   yNorm: number;
 }
 
-// Device action coordinates
-export interface DeviceCoords {
+// TikTok-specific action coordinates
+export interface TikTokCoords {
   like?: NormalizedCoords;
   comment?: NormalizedCoords;
   save?: NormalizedCoords;
-  commentSendButton?: NormalizedCoords;
   commentInputField?: NormalizedCoords;
+  commentSendButton?: NormalizedCoords;
   commentBackButton?: NormalizedCoords;
+}
+
+// Instagram-specific action coordinates
+export interface InstagramCoords {
+  like?: NormalizedCoords;
+  comment?: NormalizedCoords;
+  share?: NormalizedCoords;  // Instagram uses share instead of save
+  commentInputField?: NormalizedCoords;
+  commentSendButton?: NormalizedCoords;
+  commentCloseButton?: NormalizedCoords;
+}
+
+// Device action coordinates (nested by platform)
+export interface DeviceCoords {
+  tiktok?: TikTokCoords;
+  instagram?: InstagramCoords;
 }
 
 // Device information from iMouseXP
@@ -63,6 +82,7 @@ export interface ViewingTimeConfig {
 // Automation configuration
 export interface AutomationConfig {
   name: string;
+  platform: Platform;  // Target platform for automation
   deviceIds: string[];
   postIntervalSeconds: number;
   scrollDelaySeconds: number;
@@ -103,6 +123,7 @@ export interface ScenarioPreset {
   id: string;
   name: string;
   description: string;
+  platform: Platform;  // Target platform for this scenario
   config: {
     postIntervalSeconds: number;
     scrollDelaySeconds: number;

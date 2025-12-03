@@ -11,8 +11,14 @@ import {
   updateDeviceLabel,
   getDeviceById,
 } from '../storage/deviceStore';
-import { Device, DeviceCoords, NormalizedCoords } from '../types';
+import { Device, NormalizedCoords, Platform, TikTokCoords, InstagramCoords } from '../types';
 import { normalizeCoords, denormalizeCoords } from '../utils/coords';
+
+// TikTok action types
+type TikTokAction = 'like' | 'comment' | 'save' | 'commentSendButton' | 'commentInputField' | 'commentBackButton';
+
+// Instagram action types
+type InstagramAction = 'like' | 'comment' | 'share' | 'commentSendButton' | 'commentInputField' | 'commentCloseButton';
 
 /**
  * Refresh device list from iMouseXP and merge with stored data
@@ -104,13 +110,21 @@ export async function setDeviceLabel(
  */
 export async function setDeviceCoords(
   idImouse: string,
-  action: 'like' | 'comment' | 'save' | 'commentSendButton' | 'commentInputField',
+  platform: Platform,
+  action: string,
   coords: NormalizedCoords
 ): Promise<{ success: boolean; error?: string }> {
-  const partialCoords: Partial<DeviceCoords> = {
-    [action]: coords,
-  };
-  return updateDeviceCoords(idImouse, partialCoords);
+  if (platform === 'tiktok') {
+    const partialCoords: Partial<TikTokCoords> = {
+      [action as TikTokAction]: coords,
+    };
+    return updateDeviceCoords(idImouse, platform, partialCoords);
+  } else {
+    const partialCoords: Partial<InstagramCoords> = {
+      [action as InstagramAction]: coords,
+    };
+    return updateDeviceCoords(idImouse, platform, partialCoords);
+  }
 }
 
 /**
@@ -119,19 +133,21 @@ export async function setDeviceCoords(
  */
 export async function setCoordsFromPixels(
   idImouse: string,
-  action: 'like' | 'comment' | 'save' | 'commentSendButton' | 'commentInputField',
+  platform: Platform,
+  action: string,
   x: number,
   y: number
 ): Promise<{ success: boolean; error?: string }> {
   console.log(`[BACKEND] ========================================`);
   console.log(`[BACKEND] setCoordsFromPixels CALLED`);
   console.log(`[BACKEND] idImouse: ${idImouse}`);
+  console.log(`[BACKEND] platform: ${platform}`);
   console.log(`[BACKEND] action: ${action}`);
   console.log(`[BACKEND] x: ${x}, y: ${y}`);
   console.log(`[BACKEND] ========================================`);
-  
+
   const device = await getDeviceById(idImouse);
-  
+
   console.log(`[BACKEND] Device loaded from storage:`, JSON.stringify(device, null, 2));
 
   if (!device) {
@@ -156,15 +172,15 @@ export async function setCoordsFromPixels(
   const targetHeight = device.screenHeight;
 
   console.log(`[BACKEND] >>> NORMALIZING WITH: ${targetWidth}x${targetHeight} <<<`);
-  
+
   const normalized = normalizeCoords(x, y, targetWidth, targetHeight);
-  
+
   console.log(`[BACKEND] Normalized result: xNorm=${normalized.xNorm}, yNorm=${normalized.yNorm}`);
   console.log(`[BACKEND] Verification denormalize: x=${Math.round(normalized.xNorm * targetWidth)}, y=${Math.round(normalized.yNorm * targetHeight)}`);
-  
-  const result = await setDeviceCoords(idImouse, action, normalized);
+
+  const result = await setDeviceCoords(idImouse, platform, action, normalized);
   console.log(`[BACKEND] setDeviceCoords result:`, result);
-  
+
   return result;
 }
 
@@ -173,7 +189,8 @@ export async function setCoordsFromPixels(
  */
 export async function getAbsoluteCoords(
   idImouse: string,
-  action: 'like' | 'comment' | 'save' | 'commentSendButton' | 'commentInputField'
+  platform: Platform,
+  action: string
 ): Promise<{ success: boolean; x?: number; y?: number; error?: string }> {
   const device = await getDeviceById(idImouse);
 
@@ -181,7 +198,12 @@ export async function getAbsoluteCoords(
     return { success: false, error: `Device not found: ${idImouse}` };
   }
 
-  const coords = device.coords[action];
+  const platformCoords = device.coords[platform];
+  if (!platformCoords) {
+    return { success: false, error: `No coordinates configured for platform: ${platform}` };
+  }
+
+  const coords = platformCoords[action as keyof typeof platformCoords] as NormalizedCoords | undefined;
   if (!coords) {
     return { success: false, error: `No coordinates set for action: ${action}` };
   }
@@ -205,7 +227,8 @@ export async function getScreenshot(
  * Check if a device has all required coordinates for automation
  */
 export async function validateDeviceForAutomation(
-  idImouse: string
+  idImouse: string,
+  platform: Platform
 ): Promise<{ valid: boolean; missing: string[] }> {
   const device = await getDeviceById(idImouse);
 
@@ -214,12 +237,13 @@ export async function validateDeviceForAutomation(
   }
 
   const missing: string[] = [];
+  const platformCoords = device.coords[platform];
 
-  if (!device.coords.like) {
+  if (!platformCoords?.like) {
     missing.push('like');
   }
 
-  // Comment and save are optional but warn if missing
+  // Comment and save/share are optional but warn if missing
   // For now, only like is strictly required
 
   return {
@@ -231,7 +255,7 @@ export async function validateDeviceForAutomation(
 /**
  * Get devices that are ready for automation (have required coords)
  */
-export async function getAutomationReadyDevices(): Promise<Device[]> {
+export async function getAutomationReadyDevices(platform: Platform): Promise<Device[]> {
   const devices = await loadDevices();
-  return devices.filter((d) => d.coords.like !== undefined);
+  return devices.filter((d) => d.coords[platform]?.like !== undefined);
 }

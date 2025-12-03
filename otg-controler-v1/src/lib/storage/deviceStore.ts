@@ -8,17 +8,93 @@ import {
   DevicesFileSchemaType,
   DeviceSchemaType,
   DEFAULT_DEVICES,
-  DeviceCoordsSchema,
+  TikTokCoordsSchema,
+  InstagramCoordsSchema,
 } from '../schema';
-import { Device, DeviceCoords } from '../types';
+import { Device, DeviceCoords, Platform, TikTokCoords, NormalizedCoords } from '../types';
 import { readJsonFile, writeJsonFile } from './jsonStore';
 
+// Old flat coordinate format (for migration)
+interface LegacyDeviceCoords {
+  like?: NormalizedCoords;
+  comment?: NormalizedCoords;
+  save?: NormalizedCoords;
+  commentInputField?: NormalizedCoords;
+  commentSendButton?: NormalizedCoords;
+  commentBackButton?: NormalizedCoords;
+}
+
 /**
- * Load all devices from devices.json
+ * Check if coords are in legacy flat format (not nested by platform)
+ */
+function isLegacyCoords(coords: unknown): coords is LegacyDeviceCoords {
+  if (!coords || typeof coords !== 'object') return false;
+  const c = coords as Record<string, unknown>;
+  // If it has 'like' at top level (not nested under tiktok/instagram), it's legacy
+  return ('like' in c && c.like !== undefined && typeof c.like === 'object' && 'xNorm' in (c.like as object)) ||
+         ('comment' in c && c.comment !== undefined && typeof c.comment === 'object' && 'xNorm' in (c.comment as object)) ||
+         ('save' in c && c.save !== undefined && typeof c.save === 'object' && 'xNorm' in (c.save as object));
+}
+
+/**
+ * Migrate legacy flat coords to nested platform format
+ */
+function migrateLegacyCoords(legacyCoords: LegacyDeviceCoords): DeviceCoords {
+  return {
+    tiktok: {
+      like: legacyCoords.like,
+      comment: legacyCoords.comment,
+      save: legacyCoords.save,
+      commentInputField: legacyCoords.commentInputField,
+      commentSendButton: legacyCoords.commentSendButton,
+      commentBackButton: legacyCoords.commentBackButton,
+    },
+  };
+}
+
+/**
+ * Load all devices from devices.json, migrating legacy format if needed
  */
 export async function loadDevices(): Promise<Device[]> {
   const config = getConfig();
-  return readJsonFile(config.devicesFilePath, DevicesFileSchema, DEFAULT_DEVICES);
+
+  // Read raw JSON to check for legacy format
+  const fs = await import('fs/promises');
+  let rawData: unknown[];
+  try {
+    const content = await fs.readFile(config.devicesFilePath, 'utf-8');
+    rawData = JSON.parse(content);
+  } catch {
+    return DEFAULT_DEVICES;
+  }
+
+  // Check if migration is needed
+  let needsMigration = false;
+  const migratedData = rawData.map((device: unknown) => {
+    const d = device as Record<string, unknown>;
+    if (d.coords && isLegacyCoords(d.coords)) {
+      needsMigration = true;
+      return {
+        ...d,
+        coords: migrateLegacyCoords(d.coords as LegacyDeviceCoords),
+      };
+    }
+    return d;
+  });
+
+  // If we migrated, save the new format
+  if (needsMigration) {
+    await fs.writeFile(config.devicesFilePath, JSON.stringify(migratedData, null, 2));
+  }
+
+  // Now parse with schema
+  const parsed = DevicesFileSchema.safeParse(migratedData);
+  if (!parsed.success) {
+    console.error('Failed to parse devices.json:', parsed.error);
+    return DEFAULT_DEVICES;
+  }
+
+  return parsed.data;
 }
 
 /**
@@ -93,14 +169,16 @@ export async function mergeDevices(
 }
 
 /**
- * Update coordinates for a specific device
+ * Update coordinates for a specific device and platform
  */
 export async function updateDeviceCoords(
   idImouse: string,
-  coords: Partial<DeviceCoords>
+  platform: Platform,
+  coords: Partial<TikTokCoords> | Partial<import('../types').InstagramCoords>
 ): Promise<{ success: boolean; error?: string }> {
-  // Validate the coords
-  const validated = DeviceCoordsSchema.partial().safeParse(coords);
+  // Validate the coords based on platform
+  const schema = platform === 'tiktok' ? TikTokCoordsSchema : InstagramCoordsSchema;
+  const validated = schema.partial().safeParse(coords);
   if (!validated.success) {
     return {
       success: false,
@@ -115,8 +193,14 @@ export async function updateDeviceCoords(
     return { success: false, error: `Device not found: ${idImouse}` };
   }
 
-  devices[deviceIndex].coords = {
-    ...devices[deviceIndex].coords,
+  // Ensure platform key exists
+  if (!devices[deviceIndex].coords[platform]) {
+    devices[deviceIndex].coords[platform] = {};
+  }
+
+  // Merge the new coords into the platform-specific coords
+  devices[deviceIndex].coords[platform] = {
+    ...devices[deviceIndex].coords[platform],
     ...coords,
   };
 
@@ -158,11 +242,14 @@ export async function removeDevice(
 }
 
 /**
- * Check if a device has all required coordinates for an action
+ * Check if a device has a specific coordinate for a platform
  */
 export function deviceHasCoords(
   device: DeviceSchemaType,
-  action: 'like' | 'comment' | 'save'
+  platform: Platform,
+  action: string
 ): boolean {
-  return device.coords[action] !== undefined;
+  const platformCoords = device.coords[platform];
+  if (!platformCoords) return false;
+  return (platformCoords as Record<string, unknown>)[action] !== undefined;
 }

@@ -52,7 +52,6 @@ export function TriggerForm({ devices, onSubmit, disabled }: TriggerFormProps) {
         probability: parseFloat(probability) || 1,
       };
 
-      // Add comment templates if action involves commenting
       if ((action === 'COMMENT' || action === 'LIKE_AND_COMMENT') && commentTemplates.trim()) {
         triggerData.commentTemplates = commentTemplates
           .split('\n')
@@ -62,7 +61,6 @@ export function TriggerForm({ devices, onSubmit, disabled }: TriggerFormProps) {
 
       await onSubmit(triggerData);
 
-      // Reset form
       setKeywords('');
       setCommentTemplates('');
       setProbability('1');
@@ -78,7 +76,10 @@ export function TriggerForm({ devices, onSubmit, disabled }: TriggerFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="p-3 bg-danger/10 border border-danger/20 rounded-md text-sm text-danger">
+        <div className="flex items-center gap-2 p-3 bg-danger-muted border border-danger/20 rounded-lg text-sm text-danger">
+          <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
           {error}
         </div>
       )}
@@ -92,7 +93,7 @@ export function TriggerForm({ devices, onSubmit, disabled }: TriggerFormProps) {
           disabled={disabled}
         />
         <Input
-          label="Probability (0-1)"
+          label="Probability"
           type="number"
           min={0}
           max={1}
@@ -100,34 +101,48 @@ export function TriggerForm({ devices, onSubmit, disabled }: TriggerFormProps) {
           value={probability}
           onChange={(e) => setProbability(e.target.value)}
           disabled={disabled}
+          hint="0 to 1 (e.g., 0.5 = 50%)"
         />
       </div>
 
       <Input
-        label="Keywords (comma-separated)"
+        label="Keywords"
         value={keywords}
         onChange={(e) => setKeywords(e.target.value)}
-        placeholder="e.g., dance, dancing, girl, music"
+        placeholder="dance, dancing, girl, music"
         disabled={disabled}
+        hint="Comma-separated keywords to match"
       />
 
       {showCommentTemplates && (
         <div>
-          <label className="block text-sm font-medium text-foreground mb-1.5">
-            Comment Templates (one per line)
+          <label className="block text-sm font-medium text-foreground-secondary mb-2">
+            Comment Templates
           </label>
           <textarea
-            className="w-full px-3 py-2 rounded-md border border-card-border bg-background text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`
+              w-full px-4 py-2.5 rounded-lg text-sm
+              bg-background-input text-foreground
+              border border-border transition-all duration-200
+              placeholder:text-foreground-subtle
+              focus:outline-none focus:ring-2 focus:ring-pale-slate-dark/20 focus:border-pale-slate-dark
+              disabled:opacity-40 disabled:cursor-not-allowed
+              resize-none
+            `}
             rows={3}
             value={commentTemplates}
             onChange={(e) => setCommentTemplates(e.target.value)}
             placeholder="Great video!&#10;Love this!&#10;Amazing content"
             disabled={disabled}
           />
+          <p className="mt-1.5 text-xs text-foreground-muted">One comment per line</p>
         </div>
       )}
 
-      <Button type="submit" variant="primary" disabled={disabled} loading={submitting}>
+      <Button type="submit" variant="primary" disabled={disabled} loading={submitting} className="w-full">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
         Create Trigger
       </Button>
     </form>

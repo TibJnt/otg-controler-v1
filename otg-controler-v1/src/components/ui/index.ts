@@ -12,3 +12,6 @@ export type { CheckboxProps } from './Checkbox';
 
 export { Card } from './Card';
 export type { CardProps } from './Card';
+
+export { CollapsibleSection } from './CollapsibleSection';
+export type { CollapsibleSectionProps } from './CollapsibleSection';

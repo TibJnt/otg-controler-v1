@@ -1,9 +1,10 @@
 /**
- * Action handlers for Like, Comment, Save operations
+ * Action handlers for Like, Comment, Save/Share operations
+ * Supports both TikTok and Instagram platforms
  */
 
 import { click, keyboardInput } from '../clients/imouse';
-import { Device, ActionType, Trigger } from '../types';
+import { Device, ActionType, Platform, Trigger, TikTokCoords, InstagramCoords, NormalizedCoords } from '../types';
 import { denormalizeCoords } from '../utils/coords';
 import { getRandomComment } from '../utils/triggers';
 import { logInfo, logError, logWarn } from '../utils/logger';
@@ -20,23 +21,31 @@ function getClickDimensions(device: Device): { width: number; height: number } {
 }
 
 /**
+ * Get platform-specific coordinates from device
+ */
+function getPlatformCoords(device: Device, platform: Platform): TikTokCoords | InstagramCoords | undefined {
+  return device.coords[platform];
+}
+
+/**
  * Execute a Like action on a device
  */
-export async function executeLike(device: Device): Promise<{ success: boolean; error?: string }> {
-  if (!device.coords.like) {
-    return { success: false, error: 'Like coordinates not configured' };
+export async function executeLike(device: Device, platform: Platform): Promise<{ success: boolean; error?: string }> {
+  const coords = getPlatformCoords(device, platform);
+  if (!coords?.like) {
+    return { success: false, error: `Like coordinates not configured for ${platform}` };
   }
 
   const clickDims = getClickDimensions(device);
-  
+
   // DETAILED DEBUG LOGGING
-  logInfo(`=== LIKE ACTION DEBUG ===`, device.idImouse);
+  logInfo(`=== LIKE ACTION DEBUG [${platform}] ===`, device.idImouse);
   logInfo(`Device logical dimensions: ${device.width}x${device.height}`, device.idImouse);
   logInfo(`Device screen dimensions: ${device.screenWidth}x${device.screenHeight}`, device.idImouse);
   logInfo(`Using for click: ${clickDims.width}x${clickDims.height}`, device.idImouse);
-  logInfo(`Stored normalized coords: xNorm=${device.coords.like.xNorm}, yNorm=${device.coords.like.yNorm}`, device.idImouse);
-  
-  const { x, y } = denormalizeCoords(device.coords.like, clickDims.width, clickDims.height);
+  logInfo(`Stored normalized coords: xNorm=${coords.like.xNorm}, yNorm=${coords.like.yNorm}`, device.idImouse);
+
+  const { x, y } = denormalizeCoords(coords.like, clickDims.width, clickDims.height);
   logInfo(`Calculated absolute coords: x=${x}, y=${y}`, device.idImouse);
   logInfo(`Sending click to iMouseXP...`, device.idImouse);
 
@@ -52,53 +61,67 @@ export async function executeLike(device: Device): Promise<{ success: boolean; e
 }
 
 /**
- * Execute a Save action on a device
+ * Execute a Save/Share action on a device
+ * TikTok uses "save", Instagram uses "share"
  */
-export async function executeSave(device: Device): Promise<{ success: boolean; error?: string }> {
-  if (!device.coords.save) {
-    return { success: false, error: 'Save coordinates not configured' };
+export async function executeSave(device: Device, platform: Platform): Promise<{ success: boolean; error?: string }> {
+  const coords = getPlatformCoords(device, platform);
+
+  // Get the appropriate coordinate based on platform
+  let saveCoord: NormalizedCoords | undefined;
+  if (platform === 'tiktok') {
+    saveCoord = (coords as TikTokCoords)?.save;
+  } else {
+    saveCoord = (coords as InstagramCoords)?.share;
+  }
+
+  if (!saveCoord) {
+    const coordName = platform === 'tiktok' ? 'save' : 'share';
+    return { success: false, error: `${coordName} coordinates not configured for ${platform}` };
   }
 
   const clickDims = getClickDimensions(device);
-  const { x, y } = denormalizeCoords(device.coords.save, clickDims.width, clickDims.height);
-  logInfo(`Executing SAVE at (${x}, ${y}) [screen: ${clickDims.width}x${clickDims.height}]`, device.idImouse);
+  const { x, y } = denormalizeCoords(saveCoord, clickDims.width, clickDims.height);
+  const actionName = platform === 'tiktok' ? 'SAVE' : 'SHARE';
+  logInfo(`Executing ${actionName} at (${x}, ${y}) [screen: ${clickDims.width}x${clickDims.height}]`, device.idImouse);
 
   const result = await click(device.idImouse, x, y);
 
   if (!result.success) {
-    logError(`Save failed: ${result.error}`, device.idImouse);
+    logError(`${actionName} failed: ${result.error}`, device.idImouse);
     return result;
   }
 
-  logInfo('SAVE executed successfully', device.idImouse);
+  logInfo(`${actionName} executed successfully`, device.idImouse);
   return { success: true };
 }
 
 /**
- * Execute a Like and Save combo action on a device
+ * Execute a Like and Save/Share combo action on a device
  */
-export async function executeLikeAndSave(device: Device): Promise<{ success: boolean; error?: string }> {
+export async function executeLikeAndSave(device: Device, platform: Platform): Promise<{ success: boolean; error?: string }> {
   // Execute like first
-  logInfo('Executing LIKE_AND_SAVE combo', device.idImouse);
-  const likeResult = await executeLike(device);
+  const actionName = platform === 'tiktok' ? 'LIKE_AND_SAVE' : 'LIKE_AND_SHARE';
+  logInfo(`Executing ${actionName} combo`, device.idImouse);
+  const likeResult = await executeLike(device, platform);
 
   if (!likeResult.success) {
-    logError(`Like failed in LIKE_AND_SAVE: ${likeResult.error}`, device.idImouse);
+    logError(`Like failed in ${actionName}: ${likeResult.error}`, device.idImouse);
     return likeResult;
   }
 
   // Wait briefly between actions
   await sleep(500);
 
-  // Execute save
-  const saveResult = await executeSave(device);
+  // Execute save/share
+  const saveResult = await executeSave(device, platform);
 
   if (!saveResult.success) {
-    logError(`Save failed in LIKE_AND_SAVE: ${saveResult.error}`, device.idImouse);
+    logError(`Save/Share failed in ${actionName}: ${saveResult.error}`, device.idImouse);
     return saveResult;
   }
 
-  logInfo('LIKE_AND_SAVE executed successfully', device.idImouse);
+  logInfo(`${actionName} executed successfully`, device.idImouse);
   return { success: true };
 }
 
@@ -107,10 +130,12 @@ export async function executeLikeAndSave(device: Device): Promise<{ success: boo
  */
 export async function executeComment(
   device: Device,
+  platform: Platform,
   trigger: Trigger
 ): Promise<{ success: boolean; error?: string }> {
-  if (!device.coords.comment) {
-    return { success: false, error: 'Comment coordinates not configured' };
+  const coords = getPlatformCoords(device, platform);
+  if (!coords?.comment) {
+    return { success: false, error: `Comment coordinates not configured for ${platform}` };
   }
 
   const clickDims = getClickDimensions(device);
@@ -124,7 +149,7 @@ export async function executeComment(
 
   // Click on comment button to open comment field
   const { x: commentX, y: commentY } = denormalizeCoords(
-    device.coords.comment,
+    coords.comment,
     clickDims.width,
     clickDims.height
   );
@@ -140,9 +165,9 @@ export async function executeComment(
   await randomSleep(800, 400);
 
   // If there's a specific input field coordinate, click it
-  if (device.coords.commentInputField) {
+  if (coords.commentInputField) {
     const { x: inputX, y: inputY } = denormalizeCoords(
-      device.coords.commentInputField,
+      coords.commentInputField,
       clickDims.width,
       clickDims.height
     );
@@ -162,9 +187,9 @@ export async function executeComment(
   await randomSleep(500, 300);
 
   // Click send button if configured
-  if (device.coords.commentSendButton) {
+  if (coords.commentSendButton) {
     const { x: sendX, y: sendY } = denormalizeCoords(
-      device.coords.commentSendButton,
+      coords.commentSendButton,
       clickDims.width,
       clickDims.height
     );
@@ -179,15 +204,23 @@ export async function executeComment(
   // Wait for comment to post and animation to complete (1200-1800ms - CRITICAL for close button)
   await randomSleep(1200, 600);
 
+  // Get the close button coordinate (different name per platform)
+  let closeCoord: NormalizedCoords | undefined;
+  if (platform === 'tiktok') {
+    closeCoord = (coords as TikTokCoords).commentBackButton;
+  } else {
+    closeCoord = (coords as InstagramCoords).commentCloseButton;
+  }
+
   // Close comments section to return to video feed
-  if (device.coords.commentBackButton) {
+  if (closeCoord) {
     const { x: backX, y: backY } = denormalizeCoords(
-      device.coords.commentBackButton,
+      closeCoord,
       clickDims.width,
       clickDims.height
     );
     logInfo(
-      `Closing comments section at (${backX}, ${backY}) [normalized: ${device.coords.commentBackButton.xNorm.toFixed(3)}, ${device.coords.commentBackButton.yNorm.toFixed(3)}, screen: ${clickDims.width}x${clickDims.height}]`,
+      `Closing comments section at (${backX}, ${backY}) [normalized: ${closeCoord.xNorm.toFixed(3)}, ${closeCoord.yNorm.toFixed(3)}, screen: ${clickDims.width}x${clickDims.height}]`,
       device.idImouse
     );
     result = await click(device.idImouse, backX, backY);
@@ -201,7 +234,8 @@ export async function executeComment(
     // Wait for UI to return to video feed (600-900ms)
     await randomSleep(600, 300);
   } else {
-    logWarn('No commentBackButton coordinate configured - comments may remain open', device.idImouse);
+    const closeButtonName = platform === 'tiktok' ? 'commentBackButton' : 'commentCloseButton';
+    logWarn(`No ${closeButtonName} coordinate configured - comments may remain open`, device.idImouse);
   }
 
   logInfo('COMMENT executed successfully', device.idImouse);
@@ -213,29 +247,30 @@ export async function executeComment(
  */
 export async function executeAction(
   device: Device,
+  platform: Platform,
   action: ActionType,
   trigger: Trigger
 ): Promise<{ success: boolean; error?: string }> {
   switch (action) {
     case 'LIKE':
-      return executeLike(device);
+      return executeLike(device, platform);
 
     case 'SAVE':
-      return executeSave(device);
+      return executeSave(device, platform);
 
     case 'LIKE_AND_SAVE':
-      return executeLikeAndSave(device);
+      return executeLikeAndSave(device, platform);
 
     case 'COMMENT':
-      return executeComment(device, trigger);
+      return executeComment(device, platform, trigger);
 
     case 'LIKE_AND_COMMENT': {
-      const likeResult = await executeLike(device);
+      const likeResult = await executeLike(device, platform);
       if (!likeResult.success) {
         return likeResult;
       }
       await sleep(500); // Brief pause between actions
-      return executeComment(device, trigger);
+      return executeComment(device, platform, trigger);
     }
 
     case 'NO_ACTION':

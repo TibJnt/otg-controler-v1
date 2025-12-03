@@ -4,7 +4,7 @@
 
 import { getConfig } from '../config';
 import { openaiPost } from '../utils/http';
-import { VisionAnalysisResult } from '../types';
+import { Platform, VisionAnalysisResult } from '../types';
 
 // OpenAI Chat Completion response structure
 interface ChatCompletionResponse {
@@ -24,7 +24,13 @@ interface VisionJsonResponse {
   textContent?: string;
 }
 
-const VISION_PROMPT = `Analyze this screenshot from a short-form video app (like TikTok).
+/**
+ * Get platform-specific vision prompt
+ */
+function getVisionPrompt(platform: Platform): string {
+  const platformName = platform === 'tiktok' ? 'TikTok' : 'Instagram Reels';
+
+  return `Analyze this screenshot from ${platformName}.
 
 Describe what you see in the video content and identify key topics/themes.
 
@@ -44,13 +50,16 @@ Focus on identifying:
 - Any visible hashtags or text overlays
 
 Keep topics as single lowercase words when possible (e.g., "dance", "girl", "music", "funny", "cooking").`;
+}
 
 /**
  * Analyze an image using OpenAI Vision
  * @param imageData - Either a base64 string or a data URL
+ * @param platform - Target platform (tiktok or instagram)
  */
 export async function analyzeImage(
-  imageData: string
+  imageData: string,
+  platform: Platform = 'tiktok'
 ): Promise<{ success: boolean; result?: VisionAnalysisResult; error?: string }> {
   const config = getConfig();
 
@@ -71,7 +80,7 @@ export async function analyzeImage(
         content: [
           {
             type: 'text',
-            text: VISION_PROMPT,
+            text: getVisionPrompt(platform),
           },
           {
             type: 'image_url',
@@ -118,7 +127,8 @@ export async function analyzeImage(
  * Analyze an image from a URL (for testing or external images)
  */
 export async function analyzeImageUrl(
-  url: string
+  url: string,
+  platform: Platform = 'tiktok'
 ): Promise<{ success: boolean; result?: VisionAnalysisResult; error?: string }> {
   const config = getConfig();
 
@@ -130,7 +140,7 @@ export async function analyzeImageUrl(
         content: [
           {
             type: 'text',
-            text: VISION_PROMPT,
+            text: getVisionPrompt(platform),
           },
           {
             type: 'image_url',

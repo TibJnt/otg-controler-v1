@@ -102,7 +102,8 @@ export async function startAutomation(): Promise<{
     return { success: false, error: 'No devices selected for automation' };
   }
 
-  // Validate selected devices exist and have coordinates
+  // Validate selected devices exist and have coordinates for the current platform
+  const platform = config.platform || 'tiktok';
   const validDeviceIds: string[] = [];
   for (const deviceId of config.deviceIds) {
     const device = devices.find((d) => d.idImouse === deviceId);
@@ -110,8 +111,8 @@ export async function startAutomation(): Promise<{
       warnings.push(`Device ${deviceId} not found, skipping`);
       continue;
     }
-    if (!device.coords.like) {
-      warnings.push(`Device ${device.label} missing like coordinates, skipping`);
+    if (!device.coords[platform]?.like) {
+      warnings.push(`Device ${device.label} missing ${platform} like coordinates, skipping`);
       continue;
     }
     validDeviceIds.push(deviceId);
@@ -237,9 +238,10 @@ export async function getDeviceTriggers(deviceId: string): Promise<Trigger[]> {
 export async function getActiveDevices(): Promise<string[]> {
   const config = await loadAutomation();
   const devices = await loadDevices();
+  const platform = config.platform || 'tiktok';
 
   return config.deviceIds.filter((deviceId) => {
     const device = devices.find((d) => d.idImouse === deviceId);
-    return device && device.coords.like;
+    return device && device.coords[platform]?.like;
   });
 }

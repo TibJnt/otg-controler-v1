@@ -9,15 +9,25 @@ import {
   TriggerSchema,
   DEFAULT_AUTOMATION_CONFIG,
 } from '../schema';
-import { AutomationConfig, AutomationStatus, Trigger } from '../types';
+import { AutomationConfig, AutomationStatus, Platform, Trigger } from '../types';
 import { readJsonFile, writeJsonFile } from './jsonStore';
 
 /**
  * Load automation config from automation.json
+ * Migrates legacy configs without platform field
  */
 export async function loadAutomation(): Promise<AutomationConfig> {
   const config = getConfig();
-  return readJsonFile(config.automationFilePath, AutomationConfigSchema, DEFAULT_AUTOMATION_CONFIG);
+  const automation = await readJsonFile(config.automationFilePath, AutomationConfigSchema, DEFAULT_AUTOMATION_CONFIG);
+
+  // Ensure platform exists (migration from old format)
+  if (!automation.platform) {
+    automation.platform = 'tiktok';
+    // Save migrated config
+    await writeJsonFile(config.automationFilePath, automation, AutomationConfigSchema);
+  }
+
+  return automation;
 }
 
 /**
@@ -68,6 +78,17 @@ export async function updateTimingSettings(settings: {
     automation.scrollDelaySeconds = settings.scrollDelaySeconds;
   }
 
+  return saveAutomation(automation);
+}
+
+/**
+ * Update platform
+ */
+export async function updatePlatform(
+  platform: Platform
+): Promise<{ success: boolean; error?: string }> {
+  const automation = await loadAutomation();
+  automation.platform = platform;
   return saveAutomation(automation);
 }
 

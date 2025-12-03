@@ -72,6 +72,7 @@ export async function applyScenarioToAutomation(
     // Build new automation config
     const newConfig: AutomationConfig = {
       name: `${scenario.name} - ${new Date().toLocaleDateString()}`,
+      platform: scenario.platform || 'tiktok',
       deviceIds: deviceIds.length > 0 ? deviceIds : currentAutomation.deviceIds,
       postIntervalSeconds: scenario.config.postIntervalSeconds,
       scrollDelaySeconds: scenario.config.scrollDelaySeconds,

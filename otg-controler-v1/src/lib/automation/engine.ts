@@ -5,7 +5,7 @@
 import { loadAutomation, setRunningStatus } from '../storage/automationStore';
 import { loadDevices } from '../storage/deviceStore';
 import { getConfig } from '../config';
-import { Device } from '../types';
+import { Device, Platform } from '../types';
 import { logInfo, logError, logWarn } from '../utils/logger';
 import { executeCycle, postActionDelay } from './cycle';
 import { EngineState, EngineConfig, CycleResult, CycleCallback } from './types';
@@ -69,7 +69,10 @@ export async function startEngine(): Promise<{
     return { success: false, error: 'No devices selected for automation' };
   }
 
-  // Filter to valid devices
+  // Get platform from automation config
+  const platform: Platform = automation.platform;
+
+  // Filter to valid devices (must have like coords for the selected platform)
   const validDevices: Device[] = [];
   for (const deviceId of automation.deviceIds) {
     const device = devices.find((d) => d.idImouse === deviceId);
@@ -77,15 +80,16 @@ export async function startEngine(): Promise<{
       warnings.push(`Device ${deviceId} not found, skipping`);
       continue;
     }
-    if (!device.coords.like) {
-      warnings.push(`Device ${device.label} missing like coordinates, skipping`);
+    const platformCoords = device.coords[platform];
+    if (!platformCoords?.like) {
+      warnings.push(`Device ${device.label} missing ${platform} like coordinates, skipping`);
       continue;
     }
     validDevices.push(device);
   }
 
   if (validDevices.length === 0) {
-    return { success: false, error: 'No valid devices available for automation' };
+    return { success: false, error: `No valid devices available for ${platform} automation` };
   }
 
   // Check triggers
@@ -104,7 +108,7 @@ export async function startEngine(): Promise<{
   // Update storage running flag
   await setRunningStatus('running');
 
-  logInfo(`Automation started with ${validDevices.length} device(s)`);
+  logInfo(`Automation started with ${validDevices.length} device(s) for ${platform}`);
 
   // Build engine config
   const engineConfig: EngineConfig = {
@@ -116,7 +120,7 @@ export async function startEngine(): Promise<{
   };
 
   // Start the main loop (non-blocking)
-  runMainLoop(validDevices, engineConfig);
+  runMainLoop(validDevices, engineConfig, platform);
 
   return { success: true, warnings: warnings.length > 0 ? warnings : undefined };
 }
@@ -156,8 +160,8 @@ export async function emergencyStop(): Promise<void> {
 /**
  * Main automation loop
  */
-async function runMainLoop(devices: Device[], config: EngineConfig): Promise<void> {
-  logInfo('Main loop started');
+async function runMainLoop(devices: Device[], config: EngineConfig, platform: Platform): Promise<void> {
+  logInfo(`Main loop started for ${platform}`);
 
   try {
     while (engineState.status === 'running') {
@@ -175,7 +179,7 @@ async function runMainLoop(devices: Device[], config: EngineConfig): Promise<voi
         logInfo(`Processing device: ${device.label}`, device.idImouse);
 
         // Execute cycle for this device
-        const result = await executeCycle(device.idImouse, config);
+        const result = await executeCycle(device.idImouse, config, platform);
 
         // Update state
         engineState.cycleCount++;

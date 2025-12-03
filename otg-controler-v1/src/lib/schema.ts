@@ -4,6 +4,9 @@
 
 import { z } from 'zod';
 
+// Platform enum
+export const PlatformSchema = z.enum(['tiktok', 'instagram']);
+
 // Action type enum
 export const ActionTypeSchema = z.enum(['LIKE', 'COMMENT', 'SAVE', 'LIKE_AND_COMMENT', 'LIKE_AND_SAVE', 'NO_ACTION', 'SKIP']);
 
@@ -16,14 +19,30 @@ export const NormalizedCoordsSchema = z.object({
   yNorm: z.number().min(0).max(1),
 });
 
-// Device coordinates for actions
-export const DeviceCoordsSchema = z.object({
+// TikTok-specific coordinates
+export const TikTokCoordsSchema = z.object({
   like: NormalizedCoordsSchema.optional(),
   comment: NormalizedCoordsSchema.optional(),
   save: NormalizedCoordsSchema.optional(),
-  commentSendButton: NormalizedCoordsSchema.optional(),
   commentInputField: NormalizedCoordsSchema.optional(),
+  commentSendButton: NormalizedCoordsSchema.optional(),
   commentBackButton: NormalizedCoordsSchema.optional(),
+});
+
+// Instagram-specific coordinates
+export const InstagramCoordsSchema = z.object({
+  like: NormalizedCoordsSchema.optional(),
+  comment: NormalizedCoordsSchema.optional(),
+  share: NormalizedCoordsSchema.optional(),
+  commentInputField: NormalizedCoordsSchema.optional(),
+  commentSendButton: NormalizedCoordsSchema.optional(),
+  commentCloseButton: NormalizedCoordsSchema.optional(),
+});
+
+// Device coordinates (nested by platform)
+export const DeviceCoordsSchema = z.object({
+  tiktok: TikTokCoordsSchema.optional(),
+  instagram: InstagramCoordsSchema.optional(),
 });
 
 // Single device schema
@@ -68,6 +87,7 @@ export const ViewingTimeConfigSchema = z.object({
 // Automation config schema
 export const AutomationConfigSchema = z.object({
   name: z.string(),
+  platform: PlatformSchema.default('tiktok'),
   deviceIds: z.array(z.string()),
   postIntervalSeconds: z.number().positive(),
   scrollDelaySeconds: z.number().positive(),
@@ -87,6 +107,7 @@ export const DEFAULT_DEVICES: DevicesFileSchemaType = [];
 
 export const DEFAULT_AUTOMATION_CONFIG: AutomationConfigSchemaType = {
   name: 'New Automation',
+  platform: 'tiktok',
   deviceIds: [],
   postIntervalSeconds: 10,
   scrollDelaySeconds: 3,
@@ -108,6 +129,7 @@ export const ScenarioPresetSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   description: z.string(),
+  platform: PlatformSchema.default('tiktok'),
   config: z.object({
     postIntervalSeconds: z.number().positive(),
     scrollDelaySeconds: z.number().positive(),
