@@ -40,8 +40,8 @@ export async function imousePost<T = unknown>(
 
     const result = await response.json();
 
-    // iMouseXP returns status 0 for success
-    if (result.status === 0) {
+    // iMouseXP returns status 200 for success (or status 0 in some versions)
+    if (result.status === 200 || result.status === 0) {
       return {
         success: true,
         data: result.data as T,
@@ -50,7 +50,7 @@ export async function imousePost<T = unknown>(
 
     return {
       success: false,
-      error: result.msg || `iMouseXP error code: ${result.data?.code || 'unknown'}`,
+      error: result.message || result.msg || `iMouseXP error code: ${result.data?.code || 'unknown'}`,
       data: result.data as T,
     };
   } catch (error) {

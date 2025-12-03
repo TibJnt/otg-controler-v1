@@ -32,12 +32,27 @@ export function CoordinateCalibrator() {
   const loadDevices = useCallback(async () => {
     try {
       setLoading(true);
+      console.log('[CALIBRATOR] ========== LOADING DEVICES ==========');
       const response = await getDevices();
+      console.log('[CALIBRATOR] Raw API response:', response);
+      console.log('[CALIBRATOR] Number of devices:', response.devices?.length);
+      response.devices?.forEach((d, i) => {
+        console.log(`[CALIBRATOR] Device ${i}:`, {
+          id: d.idImouse,
+          label: d.label,
+          width: d.width,
+          height: d.height,
+          screenWidth: d.screenWidth,
+          screenHeight: d.screenHeight,
+          hasScreenDimensions: !!(d.screenWidth && d.screenHeight),
+        });
+      });
       setDevices(response.devices);
       if (response.devices.length > 0 && !selectedDeviceId) {
         setSelectedDeviceId(response.devices[0].idImouse);
       }
     } catch (err) {
+      console.error('[CALIBRATOR] Error loading devices:', err);
       setError(err instanceof Error ? err.message : 'Failed to load devices');
     } finally {
       setLoading(false);
@@ -67,12 +82,37 @@ export function CoordinateCalibrator() {
   const handleImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
     if (!imageRef.current || !selectedDevice) return;
 
+    setError(null);
+
+    if (!selectedDevice.screenWidth || !selectedDevice.screenHeight) {
+      setError('Screen dimensions not loaded. Please refresh devices and try again.');
+      console.warn('[CALIBRATION] Missing screen dimensions on selected device, aborting click.');
+      return;
+    }
+
     const rect = imageRef.current.getBoundingClientRect();
-    const scaleX = selectedDevice.width / rect.width;
-    const scaleY = selectedDevice.height / rect.height;
+    const targetWidth = imageRef.current.naturalWidth;
+    const targetHeight = imageRef.current.naturalHeight;
+
+    if (!targetWidth || !targetHeight) {
+      setError('Unable to read screenshot dimensions. Please retake the screenshot.');
+      return;
+    }
+
+    const scaleX = targetWidth / rect.width;
+    const scaleY = targetHeight / rect.height;
 
     const x = Math.round((e.clientX - rect.left) * scaleX);
     const y = Math.round((e.clientY - rect.top) * scaleY);
+
+    console.log(`[CALIBRATION] Click detected:`);
+    console.log(`[CALIBRATION]   Image display size: ${rect.width}x${rect.height}`);
+    console.log(`[CALIBRATION]   Using image natural size: ${targetWidth}x${targetHeight}`);
+    console.log(`[CALIBRATION]   Device logical: ${selectedDevice.width}x${selectedDevice.height}`);
+    console.log(`[CALIBRATION]   Device screen: ${selectedDevice.screenWidth}x${selectedDevice.screenHeight}`);
+    console.log(`[CALIBRATION]   Using target: ${targetWidth}x${targetHeight}`);
+    console.log(`[CALIBRATION]   Scale: ${scaleX}x${scaleY}`);
+    console.log(`[CALIBRATION]   Calculated coords: (${x}, ${y})`);
 
     setClickCoords({ x, y });
   };
@@ -80,13 +120,26 @@ export function CoordinateCalibrator() {
   const handleSaveClickCoords = async () => {
     if (!selectedDeviceId || !clickCoords) return;
 
+    console.log('[CALIBRATOR] ========== SAVING COORDINATES ==========');
+    console.log('[CALIBRATOR] Device ID:', selectedDeviceId);
+    console.log('[CALIBRATOR] Action:', selectedAction);
+    console.log('[CALIBRATOR] Pixel coords to save:', clickCoords);
+    console.log('[CALIBRATOR] Selected device state:', selectedDevice);
+    console.log('[CALIBRATOR] Image natural dimensions:', {
+      width: imageRef.current?.naturalWidth,
+      height: imageRef.current?.naturalHeight,
+    });
+
     try {
       setError(null);
+      console.log('[CALIBRATOR] Calling updateDeviceCoordsFromPixels...');
       await updateDeviceCoordsFromPixels(selectedDeviceId, selectedAction, clickCoords.x, clickCoords.y);
+      console.log('[CALIBRATOR] Save successful, refreshing devices...');
       // Refresh devices to show updated coords
       await loadDevices();
       setClickCoords(null);
     } catch (err) {
+      console.error('[CALIBRATOR] Error saving coordinates:', err);
       setError(err instanceof Error ? err.message : 'Failed to save coordinates');
     }
   };
@@ -187,8 +240,8 @@ export function CoordinateCalibrator() {
             <div
               className="absolute w-4 h-4 bg-primary rounded-full border-2 border-white transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
               style={{
-                left: `${(clickCoords.x / selectedDevice.width) * 100}%`,
-                top: `${(clickCoords.y / selectedDevice.height) * 100 + 28}px`, // Account for header
+                left: `${(clickCoords.x / (imageRef.current?.naturalWidth || selectedDevice.screenWidth || selectedDevice.width)) * 100}%`,
+                top: `${(clickCoords.y / (imageRef.current?.naturalHeight || selectedDevice.screenHeight || selectedDevice.height)) * 100 + 28}px`, // Account for header
               }}
             />
           )}
@@ -201,8 +254,8 @@ export function CoordinateCalibrator() {
           <CoordinateForm
             action={selectedAction}
             currentCoords={selectedDevice.coords[selectedAction]}
-            deviceWidth={selectedDevice.width}
-            deviceHeight={selectedDevice.height}
+            deviceWidth={imageRef.current?.naturalWidth || selectedDevice.screenWidth || selectedDevice.width}
+            deviceHeight={imageRef.current?.naturalHeight || selectedDevice.screenHeight || selectedDevice.height}
             onSave={handleManualSave}
           />
         </div>
@@ -210,16 +263,18 @@ export function CoordinateCalibrator() {
 
       {selectedDevice && (
         <div className="pt-4 border-t border-card-border">
-          <h3 className="text-sm font-medium mb-2">Current Coordinates</h3>
+          <h3 className="text-sm font-medium mb-2">Current Coordinates (Screen: {selectedDevice.screenWidth || selectedDevice.width}x{selectedDevice.screenHeight || selectedDevice.height})</h3>
           <div className="grid grid-cols-2 gap-2 text-sm">
             {ACTION_OPTIONS.map((action) => {
               const coords = selectedDevice.coords[action.value as ActionType];
+              const w = selectedDevice.screenWidth || selectedDevice.width;
+              const h = selectedDevice.screenHeight || selectedDevice.height;
               return (
                 <div key={action.value} className="flex justify-between">
                   <span className="text-muted">{action.label}:</span>
                   <span>
                     {coords
-                      ? `(${Math.round(coords.xNorm * selectedDevice.width)}, ${Math.round(coords.yNorm * selectedDevice.height)})`
+                      ? `(${Math.round(coords.xNorm * w)}, ${Math.round(coords.yNorm * h)})`
                       : 'Not set'}
                   </span>
                 </div>

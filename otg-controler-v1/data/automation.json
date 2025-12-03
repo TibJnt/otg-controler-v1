@@ -1,8 +1,169 @@
 {
-  "name": "New Automation",
-  "deviceIds": [],
-  "postIntervalSeconds": 10,
-  "scrollDelaySeconds": 3,
-  "triggers": [],
+  "name": "French Learner - 02/12/2025",
+  "deviceIds": [
+    "AE:53:7E:60:2B:BD"
+  ],
+  "postIntervalSeconds": 5,
+  "scrollDelaySeconds": 1,
+  "viewingTime": {
+    "relevant": {
+      "minSeconds": 15,
+      "maxSeconds": 30
+    },
+    "nonRelevant": {
+      "minSeconds": 2,
+      "maxSeconds": 5
+    }
+  },
+  "triggers": [
+    {
+      "id": "trigger_1764705475180_evopgjh",
+      "action": "LIKE",
+      "keywords": [
+        "learn french",
+        "study french",
+        "french lesson",
+        "french learning",
+        "french tutorial",
+        "french class",
+        "french teacher",
+        "french language",
+        "french vocabulary",
+        "french grammar",
+        "french conjugation",
+        "french pronunciation",
+        "speak french",
+        "french for beginners",
+        "french phrases",
+        "practice french",
+        "apprendre français",
+        "cours de français",
+        "leçon français",
+        "parler français"
+      ],
+      "probability": 0.4
+    },
+    {
+      "id": "trigger_1764705475180_8vgadfm",
+      "action": "LIKE_AND_SAVE",
+      "keywords": [
+        "learn french",
+        "study french",
+        "french lesson",
+        "french learning",
+        "french tutorial",
+        "french class",
+        "french teacher",
+        "french language",
+        "french vocabulary",
+        "french grammar",
+        "french conjugation",
+        "french pronunciation",
+        "speak french",
+        "french for beginners",
+        "french phrases",
+        "practice french",
+        "apprendre français",
+        "cours de français",
+        "leçon français",
+        "parler français"
+      ],
+      "probability": 0.2
+    },
+    {
+      "id": "trigger_1764705475180_etcqv9h",
+      "action": "SAVE",
+      "keywords": [
+        "learn french",
+        "study french",
+        "french lesson",
+        "french learning",
+        "french tutorial",
+        "french class",
+        "french teacher",
+        "french language",
+        "french vocabulary",
+        "french grammar",
+        "french conjugation",
+        "french pronunciation",
+        "speak french",
+        "french for beginners",
+        "french phrases",
+        "practice french",
+        "apprendre français",
+        "cours de français",
+        "leçon français",
+        "parler français"
+      ],
+      "probability": 0.1
+    },
+    {
+      "id": "trigger_1764705475180_vakhuff",
+      "action": "COMMENT",
+      "keywords": [
+        "learn french",
+        "study french",
+        "french lesson",
+        "french learning",
+        "french tutorial",
+        "french class",
+        "french teacher",
+        "french language",
+        "french vocabulary",
+        "french grammar",
+        "french conjugation",
+        "french pronunciation",
+        "speak french",
+        "french for beginners",
+        "french phrases",
+        "practice french",
+        "apprendre français",
+        "cours de français",
+        "leçon français",
+        "parler français"
+      ],
+      "commentTemplates": [
+        "Merci! 🇫🇷",
+        "Super utile!",
+        "J'adore! ❤️",
+        "Excellent lesson!",
+        "This helps so much!",
+        "Great explanation 👍",
+        "More like this please!",
+        "Très bien expliqué!",
+        "Perfect! 🙌",
+        "Thank you for this!"
+      ],
+      "commentLanguage": "fr",
+      "probability": 0.1
+    },
+    {
+      "id": "trigger_1764705475180_lw5s40g",
+      "action": "NO_ACTION",
+      "keywords": [
+        "learn french",
+        "study french",
+        "french lesson",
+        "french learning",
+        "french tutorial",
+        "french class",
+        "french teacher",
+        "french language",
+        "french vocabulary",
+        "french grammar",
+        "french conjugation",
+        "french pronunciation",
+        "speak french",
+        "french for beginners",
+        "french phrases",
+        "practice french",
+        "apprendre français",
+        "cours de français",
+        "leçon français",
+        "parler français"
+      ],
+      "probability": 0.3
+    }
+  ],
   "running": "stopped"
 }

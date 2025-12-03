@@ -9,10 +9,12 @@ import { imousePost } from '../utils/http';
 export interface ImouseDevice {
   deviceid: string;
   device_name: string;
-  width: number;
-  height: number;
+  width: number | string;      // Logical width (CSS points)
+  height: number | string;     // Logical height (CSS points)
+  imgw?: number;               // Actual screen/touch width in pixels
+  imgh?: number;               // Actual screen/touch height in pixels
   gname?: string;
-  state?: string;
+  state?: number | string;
 }
 
 export interface DeviceListResponse {
@@ -20,8 +22,10 @@ export interface DeviceListResponse {
 }
 
 export interface ScreenshotResponse {
-  base64?: string;
+  image?: string;  // base64 encoded image data
   path?: string;
+  code?: number;
+  message?: string;
 }
 
 /**
@@ -58,13 +62,20 @@ export async function click(
     count?: number;
   } = {}
 ): Promise<{ success: boolean; error?: string }> {
-  const response = await imousePost('/mouse/click', {
+  const payload = {
     id: deviceId,
     x: Math.round(x),
     y: Math.round(y),
     button: options.button || 'left',
     count: options.count || 1,
-  });
+  };
+  
+  console.log(`[iMouseXP CLICK] Sending click to device ${deviceId}:`);
+  console.log(`[iMouseXP CLICK] Payload: ${JSON.stringify(payload)}`);
+  
+  const response = await imousePost('/mouse/click', payload);
+  
+  console.log(`[iMouseXP CLICK] Response success: ${response.success}, error: ${response.error || 'none'}`);
 
   return {
     success: response.success,
@@ -73,25 +84,34 @@ export async function click(
 }
 
 /**
- * Perform a swipe gesture
- * Endpoint: /mouse/swipe
+ * Perform a swipe gesture using /mouse/swipe endpoint
+ * @param deviceId - Device ID
+ * @param x - Starting X position
+ * @param y - Starting Y position  
+ * @param direction - Swipe direction: 'up', 'down', 'left', 'right'
+ * @param length - Distance to swipe in pixels
  */
 export async function swipe(
   deviceId: string,
+  x: number,
+  y: number,
   direction: 'up' | 'down' | 'left' | 'right',
-  options: {
-    len?: number; // Length of swipe
-    stepping?: number; // Step size
-    stepSleep?: number; // Sleep between steps in ms
-  } = {}
+  length: number
 ): Promise<{ success: boolean; error?: string }> {
-  const response = await imousePost('/mouse/swipe', {
+  const payload = {
     id: deviceId,
+    x: Math.round(x),
+    y: Math.round(y),
     direction,
-    len: options.len || 500,
-    stepping: options.stepping || 10,
-    step_sleep: options.stepSleep || 10,
-  });
+    length: Math.round(length),
+  };
+  
+  console.log(`[iMouseXP SWIPE] Sending swipe to device ${deviceId}:`);
+  console.log(`[iMouseXP SWIPE] Start (${payload.x}, ${payload.y}), direction: ${direction}, length: ${payload.length}`);
+  
+  const response = await imousePost('/mouse/swipe', payload);
+  
+  console.log(`[iMouseXP SWIPE] Response success: ${response.success}, error: ${response.error || 'none'}`);
 
   return {
     success: response.success,
@@ -100,16 +120,24 @@ export async function swipe(
 }
 
 /**
- * Scroll to next video (swipe up)
+ * Scroll to next video (swipe up from center of screen)
+ * @param deviceId - Device ID
+ * @param screenWidth - Width of screen in pixels (default 608)
+ * @param screenHeight - Height of screen in pixels (default 1080)
  */
 export async function scrollToNextVideo(
-  deviceId: string
+  deviceId: string,
+  screenWidth: number = 608,
+  screenHeight: number = 1080
 ): Promise<{ success: boolean; error?: string }> {
-  return swipe(deviceId, 'up', {
-    len: 800,
-    stepping: 15,
-    stepSleep: 5,
-  });
+  // Start from center of screen, swipe up
+  const centerX = Math.round(screenWidth / 2);
+  const startY = Math.round(screenHeight * 0.7);  // 70% from top
+  const swipeLength = Math.round(screenHeight * 0.5);  // Swipe 50% of screen height
+  
+  console.log(`[SCROLL] Scrolling to next video: start (${centerX}, ${startY}), direction: up, length: ${swipeLength}`);
+  
+  return swipe(deviceId, centerX, startY, 'up', swipeLength);
 }
 
 /**
@@ -134,11 +162,13 @@ export async function keyboardInput(
 /**
  * Take a screenshot of the device
  * Endpoint: /pic/screenshot
+ * 
+ * Note: When binary=true, iMouseXP returns raw image data, not JSON.
+ * We handle this by setting binary=false to get base64 in JSON response.
  */
 export async function screenshot(
   deviceId: string,
   options: {
-    binary?: boolean;
     jpg?: boolean;
     savePath?: string;
     rect?: { x: number; y: number; width: number; height: number };
@@ -149,9 +179,10 @@ export async function screenshot(
   path?: string;
   error?: string;
 }> {
+  // Use binary: false to get JSON response with base64
   const response = await imousePost<ScreenshotResponse>('/pic/screenshot', {
     id: deviceId,
-    binary: options.binary ?? true,
+    binary: false,
     jpg: options.jpg ?? true,
     save_path: options.savePath,
     rect: options.rect,
@@ -163,7 +194,7 @@ export async function screenshot(
 
   return {
     success: true,
-    base64: response.data?.base64,
+    base64: response.data?.image,
     path: response.data?.path,
   };
 }
@@ -174,7 +205,7 @@ export async function screenshot(
 export async function screenshotAsDataUrl(
   deviceId: string
 ): Promise<{ success: boolean; dataUrl?: string; error?: string }> {
-  const result = await screenshot(deviceId, { binary: true, jpg: true });
+  const result = await screenshot(deviceId, { jpg: true });
 
   if (!result.success || !result.base64) {
     return { success: false, error: result.error || 'No screenshot data returned' };

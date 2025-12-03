@@ -2,7 +2,7 @@
  * Frontend API types - mirrors backend domain types
  */
 
-export type ActionType = 'LIKE' | 'COMMENT' | 'SAVE' | 'LIKE_AND_COMMENT' | 'SKIP';
+export type ActionType = 'LIKE' | 'COMMENT' | 'SAVE' | 'LIKE_AND_COMMENT' | 'LIKE_AND_SAVE' | 'NO_ACTION' | 'SKIP';
 
 export type AutomationStatus = 'stopped' | 'running';
 
@@ -22,8 +22,10 @@ export interface DeviceCoords {
 export interface Device {
   idImouse: string;
   label: string;
-  width: number;
-  height: number;
+  width: number;          // Logical width (CSS points)
+  height: number;         // Logical height (CSS points)
+  screenWidth?: number;   // Actual touch/screen width (for clicks)
+  screenHeight?: number;  // Actual touch/screen height (for clicks)
   coords: DeviceCoords;
   state?: string;
   gname?: string;
@@ -39,11 +41,22 @@ export interface Trigger {
   probability?: number;
 }
 
+export interface ViewingTime {
+  minSeconds: number;
+  maxSeconds: number;
+}
+
+export interface ViewingTimeConfig {
+  relevant: ViewingTime;
+  nonRelevant: ViewingTime;
+}
+
 export interface AutomationConfig {
   name: string;
   deviceIds: string[];
   postIntervalSeconds: number;
   scrollDelaySeconds: number;
+  viewingTime?: ViewingTimeConfig;
   triggers: Trigger[];
   running: AutomationStatus;
 }

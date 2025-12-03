@@ -9,6 +9,8 @@ const ACTION_OPTIONS = [
   { value: 'COMMENT', label: 'Comment' },
   { value: 'SAVE', label: 'Save' },
   { value: 'LIKE_AND_COMMENT', label: 'Like & Comment' },
+  { value: 'LIKE_AND_SAVE', label: 'Like & Save' },
+  { value: 'NO_ACTION', label: 'No Action (Watch Only)' },
   { value: 'SKIP', label: 'Skip' },
 ];
 

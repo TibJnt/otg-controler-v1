@@ -9,7 +9,19 @@ import { DevicesResponse, ScreenshotResponse, NormalizedCoords } from './types';
  * Get all devices
  */
 export async function getDevices(): Promise<DevicesResponse> {
-  return apiGet<DevicesResponse>('/api/devices');
+  console.log('[API] ========== GET /api/devices ==========');
+  const response = await apiGet<DevicesResponse>('/api/devices');
+  console.log('[API] Response received, devices count:', response.devices?.length);
+  response.devices?.forEach((d, i) => {
+    console.log(`[API] Device ${i} from API:`, {
+      id: d.idImouse,
+      screenWidth: d.screenWidth,
+      screenHeight: d.screenHeight,
+      width: d.width,
+      height: d.height,
+    });
+  });
+  return response;
 }
 
 /**
@@ -39,7 +51,11 @@ export async function updateDeviceCoordsFromPixels(
   x: number,
   y: number
 ): Promise<{ success: boolean; error?: string }> {
-  return apiPost(`/api/devices/${deviceId}/coords`, { action, x, y });
+  console.log('[API] ========== POST /api/devices/:id/coords ==========');
+  console.log('[API] Sending pixel coords:', { deviceId, action, x, y });
+  const response = await apiPost<{ success: boolean; error?: string }>(`/api/devices/${deviceId}/coords`, { action, x, y });
+  console.log('[API] Response:', response);
+  return response;
 }
 
 /**

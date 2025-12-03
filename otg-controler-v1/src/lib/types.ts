@@ -3,7 +3,7 @@
  */
 
 // Action types that can be triggered on a video
-export type ActionType = 'LIKE' | 'COMMENT' | 'SAVE' | 'LIKE_AND_COMMENT' | 'SKIP';
+export type ActionType = 'LIKE' | 'COMMENT' | 'SAVE' | 'LIKE_AND_COMMENT' | 'LIKE_AND_SAVE' | 'NO_ACTION' | 'SKIP';
 
 // Automation running status
 export type AutomationStatus = 'stopped' | 'running';
@@ -27,8 +27,10 @@ export interface DeviceCoords {
 export interface Device {
   idImouse: string;
   label: string;
-  width: number;
-  height: number;
+  width: number;         // Logical width (CSS points) - for display
+  height: number;        // Logical height (CSS points) - for display
+  screenWidth?: number;  // Actual touch/screen width (imgw from iMouseXP) - for clicks
+  screenHeight?: number; // Actual touch/screen height (imgh from iMouseXP) - for clicks
   coords: DeviceCoords;
   state?: string;
   gname?: string;
@@ -45,12 +47,25 @@ export interface Trigger {
   probability?: number; // 0-1, defaults to 1
 }
 
+// Viewing time range
+export interface ViewingTime {
+  minSeconds: number;
+  maxSeconds: number;
+}
+
+// Viewing time configuration for relevant vs non-relevant content
+export interface ViewingTimeConfig {
+  relevant: ViewingTime;
+  nonRelevant: ViewingTime;
+}
+
 // Automation configuration
 export interface AutomationConfig {
   name: string;
   deviceIds: string[];
   postIntervalSeconds: number;
   scrollDelaySeconds: number;
+  viewingTime?: ViewingTimeConfig;
   triggers: Trigger[];
   running: AutomationStatus;
 }
@@ -71,4 +86,26 @@ export interface CycleResult {
   matchedTrigger?: Trigger;
   actionExecuted?: ActionType;
   error?: string;
+}
+
+// Scenario trigger template (for presets, before ID generation)
+export interface ScenarioTriggerTemplate {
+  action: ActionType;
+  keywords: string[];
+  probability: number;
+  commentTemplates?: string[];
+  commentLanguage?: 'fr' | 'en';
+}
+
+// Scenario preset definition
+export interface ScenarioPreset {
+  id: string;
+  name: string;
+  description: string;
+  config: {
+    postIntervalSeconds: number;
+    scrollDelaySeconds: number;
+    viewingTime: ViewingTimeConfig;
+  };
+  triggers: ScenarioTriggerTemplate[];
 }

@@ -28,6 +28,7 @@ export async function apiGet<T>(endpoint: string): Promise<T> {
     headers: {
       'Content-Type': 'application/json',
     },
+    cache: 'no-store', // Prevent caching to always get fresh data
   });
 
   return handleResponse<T>(response);

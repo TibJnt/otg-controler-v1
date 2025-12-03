@@ -52,6 +52,68 @@ export function findMatchingTrigger(
 }
 
 /**
+ * Find ALL matching triggers for given analysis text and device
+ * Returns array of all triggers that match (empty array if none match)
+ * Used for weighted random selection in scenarios
+ */
+export function findAllMatchingTriggers(
+  triggers: Trigger[],
+  analysisText: string,
+  deviceId: string
+): Trigger[] {
+  const matches: Trigger[] = [];
+
+  for (const trigger of triggers) {
+    // Check if trigger applies to this device
+    const appliesToDevice =
+      !trigger.deviceIds || trigger.deviceIds.length === 0 || trigger.deviceIds.includes(deviceId);
+
+    if (!appliesToDevice) {
+      continue;
+    }
+
+    // Check if keywords match
+    if (matchesKeywords(analysisText, trigger.keywords)) {
+      matches.push(trigger);
+    }
+  }
+
+  return matches;
+}
+
+/**
+ * Select a trigger from array using weighted random selection
+ * Uses trigger.probability as weight
+ * Returns null if array is empty
+ */
+export function selectWeightedTrigger(triggers: Trigger[]): Trigger | null {
+  if (triggers.length === 0) return null;
+  if (triggers.length === 1) return triggers[0];
+
+  // Calculate total weight (sum of all probabilities)
+  const totalWeight = triggers.reduce((sum, t) => sum + (t.probability ?? 1), 0);
+
+  // Handle edge case: all probabilities are 0
+  if (totalWeight === 0) {
+    return triggers[0]; // Fallback to first trigger
+  }
+
+  // Generate random value between 0 and totalWeight
+  let random = Math.random() * totalWeight;
+
+  // Iterate and subtract weights until random <= 0
+  for (const trigger of triggers) {
+    random -= (trigger.probability ?? 1);
+    if (random <= 0) {
+      return trigger;
+    }
+  }
+
+  // Fallback (should not reach here due to math, but safety)
+  return triggers[triggers.length - 1];
+}
+
+/**
  * Determine if action should be executed based on probability
  * Returns true if action should proceed
  */

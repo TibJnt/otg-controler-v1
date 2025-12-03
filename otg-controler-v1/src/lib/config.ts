@@ -42,8 +42,8 @@ export function loadConfig(): AppConfig {
   const dataDir = getEnvString('DATA_DIR', './data');
 
   return {
-    // iMouseXP settings
-    imouseBaseUrl: getEnvString('IMOUSE_BASE_URL', 'http://localhost'),
+    // iMouseXP settings - use 127.0.0.1 to avoid IPv6 issues
+    imouseBaseUrl: getEnvString('IMOUSE_BASE_URL', 'http://127.0.0.1'),
     imousePort: getEnvNumber('IMOUSE_PORT', 9911),
 
     // OpenAI settings

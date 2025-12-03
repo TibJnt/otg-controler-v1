@@ -101,6 +101,25 @@ export function AutomationSettings({ config, onUpdate, disabled }: AutomationSet
         />
       </div>
 
+      {config.viewingTime && (
+        <div className="p-3 bg-blue-50 rounded border border-blue-200">
+          <h4 className="text-sm font-semibold mb-2">Viewing Time Configuration</h4>
+          <div className="text-sm text-gray-700 space-y-1">
+            <p>
+              <span className="font-medium">Relevant content:</span>{' '}
+              {config.viewingTime.relevant.minSeconds}-{config.viewingTime.relevant.maxSeconds}s
+            </p>
+            <p>
+              <span className="font-medium">Non-relevant content:</span>{' '}
+              {config.viewingTime.nonRelevant.minSeconds}-{config.viewingTime.nonRelevant.maxSeconds}s
+            </p>
+            <p className="text-xs text-gray-600 mt-2">
+              Simulates watching videos before taking action. Relevant content is watched longer.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between pt-2">
         <span className="text-sm text-muted">
           {config.deviceIds.length} device(s) selected

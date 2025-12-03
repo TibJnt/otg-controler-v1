@@ -1,1 +1,34 @@
-[]
+[
+  {
+    "idImouse": "AE:53:7E:60:2B:BD",
+    "label": "iPhone SE 2",
+    "width": 375,
+    "height": 667,
+    "screenWidth": 608,
+    "screenHeight": 1080,
+    "coords": {
+      "like": {
+        "xNorm": 0.9111842105263158,
+        "yNorm": 0.41759259259259257
+      },
+      "comment": {
+        "xNorm": 0.9111842105263158,
+        "yNorm": 0.5685185185185185
+      },
+      "save": {
+        "xNorm": 0.9210526315789473,
+        "yNorm": 0.662962962962963
+      },
+      "commentSendButton": {
+        "xNorm": 0.9078947368421053,
+        "yNorm": 0.5675925925925925
+      },
+      "commentInputField": {
+        "xNorm": 0.3832236842105263,
+        "yNorm": 0.9638888888888889
+      }
+    },
+    "state": "1",
+    "gname": "未分组"
+  }
+]

@@ -5,10 +5,10 @@
 
 import { scrollToNextVideo, screenshotAsDataUrl } from '../clients/imouse';
 import { analyzeImage, buildAnalysisText } from '../clients/vision';
-import { getTriggersForDevice } from '../storage/automationStore';
+import { getTriggersForDevice, loadAutomation } from '../storage/automationStore';
 import { getDeviceById } from '../storage/deviceStore';
-import { Device } from '../types';
-import { findMatchingTrigger, shouldExecuteAction, shouldSkipCycle } from '../utils/triggers';
+import { Device, AutomationConfig } from '../types';
+import { findAllMatchingTriggers, selectWeightedTrigger, shouldSkipCycle } from '../utils/triggers';
 import { logInfo, logError, logWarn } from '../utils/logger';
 import { executeAction } from './actions';
 import { CycleResult, EngineConfig } from './types';
@@ -27,6 +27,26 @@ function applyJitter(baseMs: number, config: EngineConfig): number {
  */
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Calculate viewing time based on whether content is relevant
+ * Returns time in milliseconds
+ */
+function getViewingTime(hasMatch: boolean, config: AutomationConfig): number {
+  if (!config.viewingTime) {
+    return 0; // No viewing time configured, skip
+  }
+
+  const range = hasMatch
+    ? config.viewingTime.relevant
+    : config.viewingTime.nonRelevant;
+
+  const minMs = range.minSeconds * 1000;
+  const maxMs = range.maxSeconds * 1000;
+
+  // Random time between min and max
+  return minMs + Math.random() * (maxMs - minMs);
 }
 
 /**
@@ -52,6 +72,7 @@ export async function executeCycle(
 
   try {
     // Get device info
+    logInfo(`[CYCLE DEBUG] Loading device from storage...`, deviceId);
     const device = await getDeviceById(deviceId);
     if (!device) {
       result.error = `Device not found: ${deviceId}`;
@@ -59,6 +80,13 @@ export async function executeCycle(
       return result;
     }
     result.deviceLabel = device.label;
+    
+    // DEBUG: Log device dimensions
+    logInfo(`[CYCLE DEBUG] Device loaded:`, deviceId);
+    logInfo(`[CYCLE DEBUG]   label: ${device.label}`, deviceId);
+    logInfo(`[CYCLE DEBUG]   width: ${device.width}, height: ${device.height}`, deviceId);
+    logInfo(`[CYCLE DEBUG]   screenWidth: ${device.screenWidth}, screenHeight: ${device.screenHeight}`, deviceId);
+    logInfo(`[CYCLE DEBUG]   like coords: ${JSON.stringify(device.coords.like)}`, deviceId);
 
     // Check for humanization skip (random skip to appear more human)
     if (shouldSkipCycle(config.skipProbability)) {
@@ -69,8 +97,11 @@ export async function executeCycle(
     }
 
     // Step 1: Scroll to next video
-    logInfo('Scrolling to next video...', deviceId);
-    const scrollResult = await scrollToNextVideo(deviceId);
+    // Use screenWidth/screenHeight for proper swipe coordinates
+    const scrollWidth = device.screenWidth || device.width;
+    const scrollHeight = device.screenHeight || device.height;
+    logInfo(`Scrolling to next video... (screen: ${scrollWidth}x${scrollHeight})`, deviceId);
+    const scrollResult = await scrollToNextVideo(deviceId, scrollWidth, scrollHeight);
     if (!scrollResult.success) {
       result.error = `Scroll failed: ${scrollResult.error}`;
       logError(result.error, deviceId);
@@ -108,24 +139,37 @@ export async function executeCycle(
       logInfo(`Topics: ${result.visionResult.topics.join(', ')}`, deviceId);
     }
 
-    // Step 5: Match triggers
+    // Step 5: Match triggers (find ALL matching triggers for weighted selection)
     if (result.analyzed && result.analysisText) {
       const triggers = await getTriggersForDevice(deviceId);
-      const matchedTrigger = findMatchingTrigger(triggers, result.analysisText, deviceId);
+      const matchingTriggers = findAllMatchingTriggers(triggers, result.analysisText, deviceId);
 
-      if (matchedTrigger) {
-        result.matchedTrigger = matchedTrigger;
-        logInfo(`Trigger matched: action=${matchedTrigger.action}, keywords=[${matchedTrigger.keywords.join(', ')}]`, deviceId);
+      // Step 5a: Calculate and apply viewing time based on match status
+      const automation = await loadAutomation();
+      const viewingTimeMs = getViewingTime(matchingTriggers.length > 0, automation);
 
-        // Check probability
-        const probability = matchedTrigger.probability ?? 1;
-        if (!shouldExecuteAction(probability)) {
-          result.skippedByProbability = true;
-          logInfo(`Action skipped by probability (${probability})`, deviceId);
-        } else {
-          // Step 6: Execute action
-          result.actionExecuted = matchedTrigger.action;
-          const actionResult = await executeAction(device, matchedTrigger.action, matchedTrigger);
+      if (viewingTimeMs > 0) {
+        const viewingTimeSec = Math.round(viewingTimeMs / 1000);
+        const contentType = matchingTriggers.length > 0 ? 'relevant' : 'non-relevant';
+        logInfo(`Simulating viewing time for ${contentType} content: ${viewingTimeSec}s`, deviceId);
+        await sleep(viewingTimeMs);
+      }
+
+      // Step 5b: Select and execute action using weighted selection
+      if (matchingTriggers.length > 0) {
+        const selectedTrigger = selectWeightedTrigger(matchingTriggers);
+
+        if (selectedTrigger) {
+          result.matchedTrigger = selectedTrigger;
+          logInfo(
+            `Trigger selected via weighted random: action=${selectedTrigger.action}, ` +
+            `keywords=[${selectedTrigger.keywords.slice(0, 3).join(', ')}...]`,
+            deviceId
+          );
+
+          // Execute the selected action
+          result.actionExecuted = selectedTrigger.action;
+          const actionResult = await executeAction(device, selectedTrigger.action, selectedTrigger);
           result.actionSuccess = actionResult.success;
 
           if (!actionResult.success) {

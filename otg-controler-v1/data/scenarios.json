@@ -1,0 +1,168 @@
+{
+  "scenarios": [
+    {
+      "id": "french-learner",
+      "name": "French Learner",
+      "description": "Optimized for French language learning content on TikTok/Reels. Watches relevant content longer (15-30s) and engages with various actions. Quickly skips non-relevant content (2-5s). Distributes actions naturally: 40% LIKE, 20% LIKE+SAVE, 10% SAVE, 10% COMMENT, 30% watch-only.",
+      "config": {
+        "postIntervalSeconds": 5,
+        "scrollDelaySeconds": 1,
+        "viewingTime": {
+          "relevant": {
+            "minSeconds": 15,
+            "maxSeconds": 30
+          },
+          "nonRelevant": {
+            "minSeconds": 2,
+            "maxSeconds": 5
+          }
+        }
+      },
+      "triggers": [
+        {
+          "action": "LIKE",
+          "keywords": [
+            "learn french",
+            "study french",
+            "french lesson",
+            "french learning",
+            "french tutorial",
+            "french class",
+            "french teacher",
+            "french language",
+            "french vocabulary",
+            "french grammar",
+            "french conjugation",
+            "french pronunciation",
+            "speak french",
+            "french for beginners",
+            "french phrases",
+            "practice french",
+            "apprendre français",
+            "cours de français",
+            "leçon français",
+            "parler français"
+          ],
+          "probability": 0.4
+        },
+        {
+          "action": "LIKE_AND_SAVE",
+          "keywords": [
+            "learn french",
+            "study french",
+            "french lesson",
+            "french learning",
+            "french tutorial",
+            "french class",
+            "french teacher",
+            "french language",
+            "french vocabulary",
+            "french grammar",
+            "french conjugation",
+            "french pronunciation",
+            "speak french",
+            "french for beginners",
+            "french phrases",
+            "practice french",
+            "apprendre français",
+            "cours de français",
+            "leçon français",
+            "parler français"
+          ],
+          "probability": 0.2
+        },
+        {
+          "action": "SAVE",
+          "keywords": [
+            "learn french",
+            "study french",
+            "french lesson",
+            "french learning",
+            "french tutorial",
+            "french class",
+            "french teacher",
+            "french language",
+            "french vocabulary",
+            "french grammar",
+            "french conjugation",
+            "french pronunciation",
+            "speak french",
+            "french for beginners",
+            "french phrases",
+            "practice french",
+            "apprendre français",
+            "cours de français",
+            "leçon français",
+            "parler français"
+          ],
+          "probability": 0.1
+        },
+        {
+          "action": "COMMENT",
+          "keywords": [
+            "learn french",
+            "study french",
+            "french lesson",
+            "french learning",
+            "french tutorial",
+            "french class",
+            "french teacher",
+            "french language",
+            "french vocabulary",
+            "french grammar",
+            "french conjugation",
+            "french pronunciation",
+            "speak french",
+            "french for beginners",
+            "french phrases",
+            "practice french",
+            "apprendre français",
+            "cours de français",
+            "leçon français",
+            "parler français"
+          ],
+          "probability": 0.1,
+          "commentTemplates": [
+            "Merci! 🇫🇷",
+            "Super utile!",
+            "J'adore! ❤️",
+            "Excellent lesson!",
+            "This helps so much!",
+            "Great explanation 👍",
+            "More like this please!",
+            "Très bien expliqué!",
+            "Perfect! 🙌",
+            "Thank you for this!"
+          ],
+          "commentLanguage": "fr"
+        },
+        {
+          "action": "NO_ACTION",
+          "keywords": [
+            "learn french",
+            "study french",
+            "french lesson",
+            "french learning",
+            "french tutorial",
+            "french class",
+            "french teacher",
+            "french language",
+            "french vocabulary",
+            "french grammar",
+            "french conjugation",
+            "french pronunciation",
+            "speak french",
+            "french for beginners",
+            "french phrases",
+            "practice french",
+            "apprendre français",
+            "cours de français",
+            "leçon français",
+            "parler français"
+          ],
+          "probability": 0.3
+        }
+      ]
+    }
+  ]
+}

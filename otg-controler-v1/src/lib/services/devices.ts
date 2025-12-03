@@ -31,14 +31,29 @@ export async function refreshDevices(): Promise<{
   }
 
   // Map iMouseXP response to our device format
-  const newDevices = result.devices.map((d) => ({
-    idImouse: d.deviceid,
-    label: d.device_name || `Device ${d.deviceid}`,
-    width: d.width,
-    height: d.height,
-    state: d.state,
-    gname: d.gname,
-  }));
+  // Note: iMouseXP may return width/height as strings
+  // IMPORTANT: imgw/imgh are the ACTUAL touch coordinates, width/height are logical (CSS) dimensions
+  const newDevices = result.devices.map((d) => {
+    const logicalWidth = typeof d.width === 'string' ? parseInt(d.width, 10) : d.width;
+    const logicalHeight = typeof d.height === 'string' ? parseInt(d.height, 10) : d.height;
+    const screenWidth = d.imgw || logicalWidth;
+    const screenHeight = d.imgh || logicalHeight;
+    
+    console.log(`[DEVICE REFRESH] Device ${d.deviceid}:`);
+    console.log(`[DEVICE REFRESH]   Logical (width/height): ${logicalWidth}x${logicalHeight}`);
+    console.log(`[DEVICE REFRESH]   Screen (imgw/imgh): ${screenWidth}x${screenHeight}`);
+    
+    return {
+      idImouse: d.deviceid,
+      label: d.device_name || `Device ${d.deviceid}`,
+      width: logicalWidth,
+      height: logicalHeight,
+      screenWidth,
+      screenHeight,
+      state: typeof d.state === 'number' ? String(d.state) : d.state,
+      gname: d.gname,
+    };
+  });
 
   // Merge with existing stored devices (preserves labels and coords)
   const mergeResult = await mergeDevices(newDevices);
@@ -56,7 +71,15 @@ export async function refreshDevices(): Promise<{
  * Get all stored devices
  */
 export async function getDevices(): Promise<Device[]> {
-  return loadDevices();
+  console.log(`[BACKEND] ========================================`);
+  console.log(`[BACKEND] getDevices CALLED`);
+  const devices = await loadDevices();
+  console.log(`[BACKEND] Loaded ${devices.length} devices from storage`);
+  devices.forEach((d, i) => {
+    console.log(`[BACKEND] Device ${i}: id=${d.idImouse}, screenWidth=${d.screenWidth}, screenHeight=${d.screenHeight}`);
+  });
+  console.log(`[BACKEND] ========================================`);
+  return devices;
 }
 
 /**
@@ -92,7 +115,7 @@ export async function setDeviceCoords(
 
 /**
  * Update coordinates from absolute pixel values (from calibration UI)
- * Automatically normalizes based on device resolution
+ * Automatically normalizes based on device SCREEN resolution (imgw/imgh)
  */
 export async function setCoordsFromPixels(
   idImouse: string,
@@ -100,14 +123,49 @@ export async function setCoordsFromPixels(
   x: number,
   y: number
 ): Promise<{ success: boolean; error?: string }> {
+  console.log(`[BACKEND] ========================================`);
+  console.log(`[BACKEND] setCoordsFromPixels CALLED`);
+  console.log(`[BACKEND] idImouse: ${idImouse}`);
+  console.log(`[BACKEND] action: ${action}`);
+  console.log(`[BACKEND] x: ${x}, y: ${y}`);
+  console.log(`[BACKEND] ========================================`);
+  
   const device = await getDeviceById(idImouse);
+  
+  console.log(`[BACKEND] Device loaded from storage:`, JSON.stringify(device, null, 2));
 
   if (!device) {
+    console.error(`[BACKEND] ERROR: Device not found: ${idImouse}`);
     return { success: false, error: `Device not found: ${idImouse}` };
   }
 
-  const normalized = normalizeCoords(x, y, device.width, device.height);
-  return setDeviceCoords(idImouse, action, normalized);
+  console.log(`[BACKEND] Device screenWidth: ${device.screenWidth} (type: ${typeof device.screenWidth})`);
+  console.log(`[BACKEND] Device screenHeight: ${device.screenHeight} (type: ${typeof device.screenHeight})`);
+
+  if (!device.screenWidth || !device.screenHeight) {
+    console.error(`[BACKEND] ERROR: Missing screen dimensions!`);
+    console.error(`[BACKEND] screenWidth: ${device.screenWidth}`);
+    console.error(`[BACKEND] screenHeight: ${device.screenHeight}`);
+    return {
+      success: false,
+      error: 'Screen dimensions missing. Please refresh devices to load screenWidth/screenHeight.',
+    };
+  }
+
+  const targetWidth = device.screenWidth;
+  const targetHeight = device.screenHeight;
+
+  console.log(`[BACKEND] >>> NORMALIZING WITH: ${targetWidth}x${targetHeight} <<<`);
+  
+  const normalized = normalizeCoords(x, y, targetWidth, targetHeight);
+  
+  console.log(`[BACKEND] Normalized result: xNorm=${normalized.xNorm}, yNorm=${normalized.yNorm}`);
+  console.log(`[BACKEND] Verification denormalize: x=${Math.round(normalized.xNorm * targetWidth)}, y=${Math.round(normalized.yNorm * targetHeight)}`);
+  
+  const result = await setDeviceCoords(idImouse, action, normalized);
+  console.log(`[BACKEND] setDeviceCoords result:`, result);
+  
+  return result;
 }
 
 /**
@@ -128,7 +186,9 @@ export async function getAbsoluteCoords(
     return { success: false, error: `No coordinates set for action: ${action}` };
   }
 
-  const absolute = denormalizeCoords(coords, device.width, device.height);
+  const width = device.screenWidth || device.width;
+  const height = device.screenHeight || device.height;
+  const absolute = denormalizeCoords(coords, width, height);
   return { success: true, ...absolute };
 }
 
