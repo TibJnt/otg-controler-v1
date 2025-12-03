@@ -17,6 +17,7 @@ export interface DeviceCoords {
   save?: NormalizedCoords;
   commentSendButton?: NormalizedCoords;
   commentInputField?: NormalizedCoords;
+  commentBackButton?: NormalizedCoords;
 }
 
 export interface Device {

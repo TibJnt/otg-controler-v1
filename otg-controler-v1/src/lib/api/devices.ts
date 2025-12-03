@@ -47,7 +47,7 @@ export async function updateDeviceCoords(
  */
 export async function updateDeviceCoordsFromPixels(
   deviceId: string,
-  action: 'like' | 'comment' | 'save' | 'commentSendButton' | 'commentInputField',
+  action: 'like' | 'comment' | 'save' | 'commentSendButton' | 'commentInputField' | 'commentBackButton',
   x: number,
   y: number
 ): Promise<{ success: boolean; error?: string }> {

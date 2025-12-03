@@ -5,7 +5,7 @@ import { Button, Input } from '@/src/components/ui';
 import { NormalizedCoords } from '@/src/lib/api/types';
 
 interface CoordinateFormProps {
-  action: 'like' | 'comment' | 'save' | 'commentSendButton' | 'commentInputField';
+  action: 'like' | 'comment' | 'save' | 'commentSendButton' | 'commentInputField' | 'commentBackButton';
   currentCoords?: NormalizedCoords;
   deviceWidth: number;
   deviceHeight: number;

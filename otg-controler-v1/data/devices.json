@@ -20,12 +20,16 @@
         "yNorm": 0.662962962962963
       },
       "commentSendButton": {
-        "xNorm": 0.9078947368421053,
-        "yNorm": 0.5675925925925925
+        "xNorm": 0.875,
+        "yNorm": 0.9527777777777777
       },
       "commentInputField": {
         "xNorm": 0.3832236842105263,
         "yNorm": 0.9638888888888889
+      },
+      "commentBackButton": {
+        "xNorm": 0.930921052631579,
+        "yNorm": 0.3
       }
     },
     "state": "1",

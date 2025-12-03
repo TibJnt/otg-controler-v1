@@ -24,6 +24,7 @@ export default function ScenarioSelector({
   const [selectedScenarioId, setSelectedScenarioId] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   // Load scenarios on mount
   useEffect(() => {
@@ -46,19 +47,27 @@ export default function ScenarioSelector({
     // Validate devices selected
     if (deviceIds.length === 0) {
       setError('Please select at least one device first');
+      setSuccess(null);
       return;
     }
 
     setLoading(true);
     setError(null);
+    setSuccess(null);
 
     try {
       await applyScenario(selectedScenarioId, deviceIds);
-      onScenarioApplied();
+      const scenarioName = scenarios.find(s => s.id === selectedScenarioId)?.name || 'Scenario';
+      setSuccess(`✓ ${scenarioName} loaded successfully!`);
       setError(null);
+      onScenarioApplied();
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       console.error('Failed to apply scenario:', err);
       setError(err instanceof Error ? err.message : 'Failed to apply scenario');
+      setSuccess(null);
     } finally {
       setLoading(false);
     }
@@ -76,6 +85,12 @@ export default function ScenarioSelector({
         </div>
       )}
 
+      {success && (
+        <div className="mb-3 p-2 bg-green-100 text-green-700 rounded text-sm font-medium">
+          {success}
+        </div>
+      )}
+
       <div className="space-y-3">
         <div>
           <label className="block text-sm font-medium mb-1">
@@ -83,7 +98,11 @@ export default function ScenarioSelector({
           </label>
           <select
             value={selectedScenarioId}
-            onChange={(e) => setSelectedScenarioId(e.target.value)}
+            onChange={(e) => {
+              setSelectedScenarioId(e.target.value);
+              setError(null);
+              setSuccess(null);
+            }}
             disabled={disabled || loading}
             className="w-full p-2 border rounded bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
           >

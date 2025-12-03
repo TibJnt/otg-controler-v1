@@ -1,6 +1,48 @@
 {
   "scenarios": [
     {
+      "id": "comment-test",
+      "name": "Comment Test",
+      "description": "Simple test scenario for comment automation. Triggers on almost any video to test the comment bottom sheet close functionality. Uses short timings for quick testing.",
+      "config": {
+        "postIntervalSeconds": 3,
+        "scrollDelaySeconds": 1,
+        "viewingTime": {
+          "relevant": {
+            "minSeconds": 2,
+            "maxSeconds": 3
+          },
+          "nonRelevant": {
+            "minSeconds": 1,
+            "maxSeconds": 2
+          }
+        }
+      },
+      "triggers": [
+        {
+          "action": "COMMENT",
+          "keywords": [
+            "video",
+            "tiktok",
+            "content",
+            "watch",
+            "see",
+            "look",
+            "show"
+          ],
+          "probability": 1.0,
+          "commentTemplates": [
+            "Nice! 👍",
+            "Great video!",
+            "Love this!",
+            "Amazing! 🔥",
+            "Cool!",
+            "Awesome! ✨"
+          ]
+        }
+      ]
+    },
+    {
       "id": "french-learner",
       "name": "French Learner",
       "description": "Optimized for French language learning content on TikTok/Reels. Watches relevant content longer (15-30s) and engages with various actions. Quickly skips non-relevant content (2-5s). Distributes actions naturally: 40% LIKE, 20% LIKE+SAVE, 10% SAVE, 10% COMMENT, 30% watch-only.",

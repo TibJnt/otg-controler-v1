@@ -6,7 +6,7 @@ import { CoordinateForm } from './CoordinateForm';
 import { getDevices, getDeviceScreenshot, updateDeviceCoordsFromPixels } from '@/src/lib/api/devices';
 import { Device } from '@/src/lib/api/types';
 
-type ActionType = 'like' | 'comment' | 'save' | 'commentSendButton' | 'commentInputField';
+type ActionType = 'like' | 'comment' | 'save' | 'commentSendButton' | 'commentInputField' | 'commentBackButton';
 
 const ACTION_OPTIONS = [
   { value: 'like', label: 'Like Button' },
@@ -14,6 +14,7 @@ const ACTION_OPTIONS = [
   { value: 'save', label: 'Save Button' },
   { value: 'commentSendButton', label: 'Send Comment Button' },
   { value: 'commentInputField', label: 'Comment Input Field' },
+  { value: 'commentBackButton', label: 'Comment Back Button (to close)' },
 ];
 
 export function CoordinateCalibrator() {

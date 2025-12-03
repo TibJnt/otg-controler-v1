@@ -21,6 +21,7 @@ export interface DeviceCoords {
   save?: NormalizedCoords;
   commentSendButton?: NormalizedCoords;
   commentInputField?: NormalizedCoords;
+  commentBackButton?: NormalizedCoords;
 }
 
 // Device information from iMouseXP

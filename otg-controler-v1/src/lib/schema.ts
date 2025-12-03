@@ -23,6 +23,7 @@ export const DeviceCoordsSchema = z.object({
   save: NormalizedCoordsSchema.optional(),
   commentSendButton: NormalizedCoordsSchema.optional(),
   commentInputField: NormalizedCoordsSchema.optional(),
+  commentBackButton: NormalizedCoordsSchema.optional(),
 });
 
 // Single device schema

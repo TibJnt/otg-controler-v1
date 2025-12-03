@@ -142,15 +142,16 @@ export async function scrollToNextVideo(
 
 /**
  * Input text via keyboard
- * Endpoint: /keyboard/input (or similar)
+ * Endpoint: /key/sendkey
+ * Note: Only supports English letters, numbers, and basic ASCII characters
  */
 export async function keyboardInput(
   deviceId: string,
   text: string
 ): Promise<{ success: boolean; error?: string }> {
-  const response = await imousePost('/keyboard/input', {
+  const response = await imousePost('/key/sendkey', {
     id: deviceId,
-    text,
+    key: text,
   });
 
   return {

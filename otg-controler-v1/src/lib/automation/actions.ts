@@ -136,8 +136,8 @@ export async function executeComment(
     return result;
   }
 
-  // Wait a bit for the comment field to appear
-  await sleep(500);
+  // Wait for the comment field to appear (800-1200ms, human-like timing)
+  await randomSleep(800, 400);
 
   // If there's a specific input field coordinate, click it
   if (device.coords.commentInputField) {
@@ -147,7 +147,7 @@ export async function executeComment(
       clickDims.height
     );
     await click(device.idImouse, inputX, inputY);
-    await sleep(300);
+    await randomSleep(400, 300); // 400-700ms for keyboard to focus
   }
 
   // Type the comment
@@ -158,8 +158,8 @@ export async function executeComment(
     return result;
   }
 
-  // Wait a bit before sending
-  await sleep(300);
+  // Simulate reading comment before sending (500-800ms)
+  await randomSleep(500, 300);
 
   // Click send button if configured
   if (device.coords.commentSendButton) {
@@ -174,6 +174,34 @@ export async function executeComment(
       logError(`Failed to send comment: ${result.error}`, device.idImouse);
       return result;
     }
+  }
+
+  // Wait for comment to post and animation to complete (1200-1800ms - CRITICAL for close button)
+  await randomSleep(1200, 600);
+
+  // Close comments section to return to video feed
+  if (device.coords.commentBackButton) {
+    const { x: backX, y: backY } = denormalizeCoords(
+      device.coords.commentBackButton,
+      clickDims.width,
+      clickDims.height
+    );
+    logInfo(
+      `Closing comments section at (${backX}, ${backY}) [normalized: ${device.coords.commentBackButton.xNorm.toFixed(3)}, ${device.coords.commentBackButton.yNorm.toFixed(3)}, screen: ${clickDims.width}x${clickDims.height}]`,
+      device.idImouse
+    );
+    result = await click(device.idImouse, backX, backY);
+    if (!result.success) {
+      logWarn(`Failed to close comments section: ${result.error}`, device.idImouse);
+      // Continue anyway - comment was sent
+    } else {
+      logInfo(`Close button clicked successfully, waiting for UI transition...`, device.idImouse);
+    }
+
+    // Wait for UI to return to video feed (600-900ms)
+    await randomSleep(600, 300);
+  } else {
+    logWarn('No commentBackButton coordinate configured - comments may remain open', device.idImouse);
   }
 
   logInfo('COMMENT executed successfully', device.idImouse);
@@ -228,4 +256,14 @@ export async function executeAction(
  */
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Sleep with randomized duration to simulate human-like timing
+ * @param baseMs - Base delay in milliseconds
+ * @param varianceMs - Random variance to add (0 to varianceMs)
+ */
+function randomSleep(baseMs: number, varianceMs: number = 200): Promise<void> {
+  const delay = baseMs + Math.random() * varianceMs;
+  return sleep(Math.round(delay));
 }
